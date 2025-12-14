@@ -29,11 +29,11 @@ export function ProductoCard({ producto }: any) {
 
       {/* Info */}
       <div className="px-1">
-        <h2 className="text-[17px] font-semibold text-[#FCFAF6] leading-snug">
+        <h2 className="text-[19px] font-semibold text-[#FCFAF6] leading-snug">
           {producto.nombre}
         </h2>
 
-        <p className="mt-1 text-[15px] font-medium text-[#FCFAF6]">
+        <p className="mt-1 text-[20px] font-medium text-[#FCFAF6]">
           ${producto.precioBase?.toLocaleString("es-AR")}
         </p>
       </div>

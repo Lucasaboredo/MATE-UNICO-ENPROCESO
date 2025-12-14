@@ -1,5 +1,5 @@
 ############################
-# OS X
+# OS / EDITORES
 ############################
 .DS_Store
 .AppleDouble
@@ -8,83 +8,20 @@ Icon
 .Spotlight-V100
 .Trashes
 ._*
-
-############################
-# Linux
-############################
+Thumbs.db
+Desktop.ini
 *~
 
 ############################
-# Windows
-############################
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-*.cab
-*.msi
-*.msm
-*.msp
-
-############################
-# Packages
-############################
-*.7z
-*.csv
-*.dat
-*.dmg
-*.gz
-*.iso
-*.jar
-*.rar
-*.tar
-*.zip
-*.com
-*.class
-*.dll
-*.exe
-*.o
-*.seed
-*.so
-*.swo
-*.swp
-*.swn
-*.swm
-*.out
-*.pid
-
-############################
-# Logs (pero NO ignoramos la DB)
+# Logs
 ############################
 *.log
-*.sql
 
 ############################
-# Misc.
+# Node
 ############################
-*#
-ssl
-.idea
-nbproject
-public/uploads/*
-!public/uploads/.gitkeep
-.tsbuildinfo
-.eslintcache
-
-############################
-# Node.js
-############################
-lib-cov
-lcov.info
-pids
-logs
-results
 node_modules
-.node_history
-
-############################
-# Package managers
-############################
+.pnp.*
 .yarn/*
 !.yarn/cache
 !.yarn/unplugged
@@ -92,19 +29,28 @@ node_modules
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
-.pnp.*
-yarn-error.log
 
 ############################
-# Tests
+# Build
 ############################
-coverage
+dist
+build
+.cache
+
+############################
+# Env (NO subir)
+############################
+.env
 
 ############################
 # Strapi
 ############################
-.env
-dist
-build
 .strapi-updater.json
 .strapi-cloud.json
+
+############################
+# ⚠️ MUY IMPORTANTE
+# NO ignorar la DB ni uploads
+############################
+# .tmp        ← DEBE VERSIONARSE
+# public/uploads ← DEBE VERSIONARSE
