@@ -37,7 +37,7 @@ export default function HeroCarousel({ slides }: { slides: HomeEntry[] }) {
 
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % images.length);
-    }, 20000); // 👈 ACÁ CONTROLÁS EL TIEMPO
+    }, 10000); // 👈 ACÁ CONTROLÁS EL TIEMPO
 
     return () => clearInterval(interval);
   }, [images.length]);
