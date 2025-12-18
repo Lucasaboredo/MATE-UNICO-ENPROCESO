@@ -1,49 +1,46 @@
 // src/types/product.ts
 
-// 👇 Si en Strapi después agregan campos, se pueden sumar acá
+export interface Imagen {
+  id: number;
+  url: string;
+  width?: number;
+  height?: number;
+}
+
 export interface Variante {
   id: number;
   nombre: string;
   color?: string;
   stock?: number;
+  precio?: number;
+
+  // NUEVOS CAMPOS PARA VISUALIZACIÓN
+  codigo_color?: string; // Hexadecimal (ej: #000000)
+  indice_imagen?: number; // Qué posición de foto usar (0, 1, 2...)
+}
+
+export interface Opinion {
+  id: number;
+  Autor: string;
+  Texto: string;
+  Puntuacion: number;
+  createdAt: string;
 }
 
 export interface Producto {
   id: number;
+  documentId: string;
   nombre: string;
   descripcion: string;
   precioBase: number;
   material: string;
   activo: boolean;
+  slug: string;
 
-  // Relación con variantes (puede venir vacío)
   variantes: Variante[];
+  imagen: Imagen[];
+  opinions?: Opinion[];
 
-  // Campos de fecha que vimos en el JSON de prueba
-  createdAt?: string;
-  updatedAt?: string;
-  publishedAt?: string;
-
-  // Por ahora lo dejamos genérico
-  categoria?: unknown;
+  categoria?: any;
+  destacado?: boolean;
 }
-
-// Respuesta típica de lista en Strapi
-export interface StrapiListResponse<T> {
-  data: T[];
-  meta: {
-    pagination: {
-      page: number;
-      pageSize: number;
-      pageCount: number;
-      total: number;
-    };
-  };
-}
-
-// Respuesta típica de un solo recurso
-export interface StrapiSingleResponse<T> {
-  data: T;
-  meta: Record<string, unknown>;
-}
-

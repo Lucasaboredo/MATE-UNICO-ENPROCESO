@@ -70,6 +70,16 @@
     "destacado": {
       "type": "boolean",
       "default": false
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "nombre"
+    },
+    "opinions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::opinion.opinion",
+      "mappedBy": "producto"
     }
   }
 }

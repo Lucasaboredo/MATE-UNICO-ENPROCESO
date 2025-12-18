@@ -5,7 +5,15 @@ export interface InventarioVariantes extends Struct.ComponentSchema {
   info: {
     displayName: 'Variantes';
   };
-  attributes: {};
+  attributes: {
+    codigo_color: Schema.Attribute.String;
+    indice_imagen: Schema.Attribute.Integer;
+    nombre: Schema.Attribute.String & Schema.Attribute.Required;
+    precio: Schema.Attribute.Decimal;
+    stock: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<0>;
+  };
 }
 
 declare module '@strapi/strapi' {

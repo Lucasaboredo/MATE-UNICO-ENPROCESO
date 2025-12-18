@@ -1,7 +1,10 @@
+// src/app/productos/ProductosView.tsx
 "use client";
 
 import { useMemo, useState } from "react";
-import { ProductoCard } from "@/components/ProductoCard";
+// CAMBIO AQUÍ: Importamos el componente nuevo (ProductCard) en lugar del viejo.
+// Asegúrate de que el archivo src/components/ProductCard.tsx exista (el que te pasé antes).
+import ProductCard from "@/components/ProductCard";
 
 // ================== CONSTANTES ==================
 
@@ -40,9 +43,17 @@ export default function ProductosView({ productos }: { productos: any[] }) {
   // ================== FILTRADO + ORDEN ==================
   const productosProcesados = useMemo(() => {
     let resultado = productos.filter((p) => {
+      // Nota: Asegúrate de que tus productos en Strapi tengan 'categoria.nombre', 'combo', etc.
+      // Si el filtrado falla, revisa los nombres de los campos en la API.
       if (categoria && p.categoria?.nombre !== categoria) return false;
       if (combo && p.combo !== combo) return false;
+
+      // Filtrado por color (SideBar):
+      // Si 'p.color' es un campo de texto simple en Strapi, esto funciona.
+      // Si quieres filtrar por variantes, habría que ajustar esta lógica, 
+      // pero por ahora lo dejo tal cual lo tenías para no romper nada.
       if (color && p.color !== color) return false;
+
       return true;
     });
 
@@ -66,7 +77,7 @@ export default function ProductosView({ productos }: { productos: any[] }) {
       <section className="mx-auto max-w-[1400px] px-6 py-12 flex gap-12">
 
         {/* ================= SIDEBAR ================= */}
-        <aside className="w-64 pr-8 border-r border-[#E0DCD3] select-none">
+        <aside className="w-64 pr-8 border-r border-[#E0DCD3] select-none hidden md:block">
           <h2 className="text-[42px] font-bold text-[#5C5149] mb-6">
             Producto
           </h2>
@@ -82,11 +93,10 @@ export default function ProductosView({ productos }: { productos: any[] }) {
                     <button
                       type="button"
                       onClick={() => setCategoria(active ? null : c.value)}
-                      className={`cursor-pointer text-left ${
-                        active
-                          ? "text-[#5C5149] font-semibold"
-                          : "text-[#5C5149]/70 hover:text-[#5C5149]"
-                      }`}
+                      className={`cursor-pointer text-left ${active
+                        ? "text-[#5C5149] font-semibold"
+                        : "text-[#5C5149]/70 hover:text-[#5C5149]"
+                        }`}
                     >
                       {c.label}
                     </button>
@@ -107,11 +117,10 @@ export default function ProductosView({ productos }: { productos: any[] }) {
                     <button
                       type="button"
                       onClick={() => setCombo(active ? null : c.value)}
-                      className={`cursor-pointer text-left ${
-                        active
-                          ? "text-[#5C5149] font-semibold not-italic"
-                          : "hover:text-[#5C5149]"
-                      }`}
+                      className={`cursor-pointer text-left ${active
+                        ? "text-[#5C5149] font-semibold not-italic"
+                        : "hover:text-[#5C5149]"
+                        }`}
                     >
                       {c.label}
                     </button>
@@ -189,11 +198,12 @@ export default function ProductosView({ productos }: { productos: any[] }) {
           {/* GRID */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
             {productosProcesados.map((p: any) => (
-              <ProductoCard key={p.id} producto={p} />
+              // CAMBIO AQUÍ: Usamos ProductCard (el nuevo)
+              <ProductCard key={p.id} producto={p} />
             ))}
 
             {productosProcesados.length === 0 && (
-              <p className="text-[#5C5149]/70 col-span-full">
+              <p className="text-[#5C5149]/70 col-span-full text-center py-10">
                 No hay productos que coincidan con los filtros seleccionados.
               </p>
             )}

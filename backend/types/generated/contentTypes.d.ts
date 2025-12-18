@@ -535,6 +535,37 @@ export interface ApiHomeHome extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiOpinionOpinion extends Struct.CollectionTypeSchema {
+  collectionName: 'opinions';
+  info: {
+    displayName: 'Opinion';
+    pluralName: 'opinions';
+    singularName: 'opinion';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    Autor: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::opinion.opinion'
+    > &
+      Schema.Attribute.Private;
+    producto: Schema.Attribute.Relation<'manyToOne', 'api::producto.producto'>;
+    publishedAt: Schema.Attribute.DateTime;
+    Puntuacion: Schema.Attribute.Integer;
+    Texto: Schema.Attribute.Text;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiProductoProducto extends Struct.CollectionTypeSchema {
   collectionName: 'productos';
   info: {
@@ -574,8 +605,10 @@ export interface ApiProductoProducto extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     material: Schema.Attribute.String;
     nombre: Schema.Attribute.String & Schema.Attribute.Required;
+    opinions: Schema.Attribute.Relation<'oneToMany', 'api::opinion.opinion'>;
     precioBase: Schema.Attribute.Decimal & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
+    slug: Schema.Attribute.UID<'nombre'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1126,6 +1159,7 @@ declare module '@strapi/strapi' {
       'admin::user': AdminUser;
       'api::categoria.categoria': ApiCategoriaCategoria;
       'api::home.home': ApiHomeHome;
+      'api::opinion.opinion': ApiOpinionOpinion;
       'api::producto.producto': ApiProductoProducto;
       'api::variante.variante': ApiVarianteVariante;
       'plugin::content-releases.release': PluginContentReleasesRelease;

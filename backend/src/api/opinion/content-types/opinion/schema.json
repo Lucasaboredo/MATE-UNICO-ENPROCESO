@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "opinions",
+  "info": {
+    "singularName": "opinion",
+    "pluralName": "opinions",
+    "displayName": "Opinion"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Autor": {
+      "type": "string"
+    },
+    "Puntuacion": {
+      "type": "integer"
+    },
+    "Texto": {
+      "type": "text"
+    },
+    "producto": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::producto.producto",
+      "inversedBy": "opinions"
+    }
+  }
+}
