@@ -1,17 +1,16 @@
-// src/app/layout.tsx
-
 import "./globals.css";
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google"; // 1. Importamos la fuente
+import { Inter } from "next/font/google";
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { CartProvider } from "@/lib/cartContext"; // ✅ NUEVO
 
-// 2. Configuramos la fuente Inter
+// Fuente
 const inter = Inter({ subsets: ["latin"] });
 
-/* ================= METADATA (Pestaña navegador) ================= */
+/* ================= METADATA ================= */
 export const metadata: Metadata = {
   title: {
     default: "Mate Único",
@@ -31,16 +30,18 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es">
-      {/* 3. Aplicamos la clase de la fuente al body */}
       <body className={inter.className}>
-        <Header />
+        {/* ✅ PROVIDER GLOBAL */}
+        <CartProvider>
+          <Header />
 
-        {/* AGREGAMOS PADDING PARA QUE EL HEADER FIJO NO TAPE EL CONTENIDO */}
-        <main className="pt-[140px]">
-          {children}
-        </main>
+          {/* Padding para header fijo */}
+          <main className="pt-[140px]">
+            {children}
+          </main>
 
-        <Footer />
+          <Footer />
+        </CartProvider>
       </body>
     </html>
   );

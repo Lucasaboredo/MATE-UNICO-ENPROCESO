@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Tilt_Warp, Inter } from "next/font/google";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useCart } from "@/lib/cartContext";
 
 // Fuentes
 const tilt = Tilt_Warp({ subsets: ["latin"], weight: "400" });
@@ -13,6 +14,15 @@ const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600"] });
 export default function Header() {
   const [shadow, setShadow] = useState(false);
   const pathname = usePathname();
+
+  // 🛒 carrito
+  const { items } = useCart();
+
+  // 🔢 total de productos (suma cantidades)
+  const cartCount = items.reduce(
+    (acc: number, item: any) => acc + item.cantidad,
+    0
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,7 +33,7 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // 👉 helper para links
+  // helper activo
   const isActive = (href: string) => pathname === href;
 
   return (
@@ -36,54 +46,75 @@ export default function Header() {
       <div className="w-full bg-[#5F6B58] h-[95px] flex items-center">
         <div className="mx-auto flex max-w-[1400px] w-full items-center justify-between px-10">
           
-      {/* LOGO */}
-      <Link href="/" className="flex items-center gap-1 cursor-pointer">
-        <Image
-          src="/logo-mate.svg"
-          alt="Logo Mate Único"
-          width={151}
-          height={226}
-          className="w-[80px] h-auto mt-1"
-          priority
-        />
+          {/* LOGO */}
+          <Link href="/" className="flex items-center gap-1 cursor-pointer">
+            <Image
+              src="/logo-mate.svg"
+              alt="Logo Mate Único"
+              width={151}
+              height={226}
+              className="w-[80px] h-auto mt-1"
+              priority
+            />
 
-        <span
-          className={`${tilt.className} text-[26px] text-[#FCFAF6] leading-none mt-[3px]`}
-        >
-          Mate Único
-        </span>
-      </Link>
+            <span
+              className={`${tilt.className} text-[26px] text-[#FCFAF6] leading-none mt-[3px]`}
+            >
+              Mate Único
+            </span>
+          </Link>
 
-      {/* ICONOS */}
-      <div className="flex flex-row items-center gap-12">
-        <Link
-          href="/carrito"
-          aria-label="Carrito"
-          className="transition-all duration-200 hover:opacity-80 hover:scale-105"
-        >
-          <Image
-            src="/icon-cart.svg"
-            alt="Carrito"
-            width={56}
-            height={46}
-            className="w-[28px] h-auto"
-          />
-        </Link>
+          {/* ICONOS */}
+          <div className="flex flex-row items-center gap-12">
 
-        <Link
-          href="/login"
-          aria-label="Usuario"
-          className="transition-all duration-200 hover:opacity-80 hover:scale-105"
-        >
-          <Image
-            src="/icon-user.svg"
-            alt="Usuario"
-            width={36}
-            height={35}
-            className="w-[22px] h-auto"
-          />
-        </Link>
-      </div>
+            {/* 🛒 CARRITO */}
+            <Link
+              href="/carrito"
+              aria-label="Carrito"
+              className="relative transition-all duration-200 hover:opacity-80 hover:scale-105"
+            >
+              <Image
+                src="/icon-cart.svg"
+                alt="Carrito"
+                width={56}
+                height={46}
+                className="w-[28px] h-auto"
+              />
+
+              {cartCount > 0 && (
+                <span
+                  className="
+                    absolute -top-2 -right-2
+                    bg-[#C0392B]
+                    text-white
+                    text-[11px]
+                    font-bold
+                    w-5 h-5
+                    rounded-full
+                    flex items-center justify-center
+                    shadow-md
+                  "
+                >
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
+            {/* 👤 USUARIO */}
+            <Link
+              href="/login"
+              aria-label="Usuario"
+              className="transition-all duration-200 hover:opacity-80 hover:scale-105"
+            >
+              <Image
+                src="/icon-user.svg"
+                alt="Usuario"
+                width={36}
+                height={35}
+                className="w-[22px] h-auto"
+              />
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -113,7 +144,6 @@ export default function Header() {
                 {item.label}
               </span>
 
-              {/* 👉 Línea verde activa */}
               {isActive(item.href) && (
                 <span className="absolute left-0 -bottom-[2px] w-full h-[2px] bg-[#2F4A2D]" />
               )}
