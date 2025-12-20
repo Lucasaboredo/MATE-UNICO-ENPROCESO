@@ -13,6 +13,10 @@ const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600"] });
 
 export default function Header() {
   const [shadow, setShadow] = useState(false);
+
+  // 👉 estado para animación del carrito
+  const [animateCart, setAnimateCart] = useState(false);
+
   const pathname = usePathname();
 
   // 🛒 carrito
@@ -24,6 +28,7 @@ export default function Header() {
     0
   );
 
+  // sombra al scrollear
   useEffect(() => {
     const handleScroll = () => {
       setShadow(window.scrollY > 10);
@@ -32,6 +37,19 @@ export default function Header() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // 👉 animación cuando cambia el carrito
+  useEffect(() => {
+    if (cartCount > 0) {
+      setAnimateCart(true);
+
+      const t = setTimeout(() => {
+        setAnimateCart(false);
+      }, 300);
+
+      return () => clearTimeout(t);
+    }
+  }, [cartCount]);
 
   // helper activo
   const isActive = (href: string) => pathname === href;
@@ -83,7 +101,7 @@ export default function Header() {
 
               {cartCount > 0 && (
                 <span
-                  className="
+                  className={`
                     absolute -top-2 -right-2
                     bg-[#C0392B]
                     text-white
@@ -93,7 +111,9 @@ export default function Header() {
                     rounded-full
                     flex items-center justify-center
                     shadow-md
-                  "
+                    transition-transform duration-300 ease-out
+                    ${animateCart ? "scale-125" : "scale-100"}
+                  `}
                 >
                   {cartCount}
                 </span>
