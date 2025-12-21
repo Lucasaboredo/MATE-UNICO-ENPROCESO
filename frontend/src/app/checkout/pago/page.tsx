@@ -1,40 +1,29 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Stepper from "@/components/stepper/Stepper";
 import { useCart } from "@/lib/cartContext";
 import { useCheckout } from "@/lib/checkoutContext";
 import type { CartItem } from "@/types/cart";
+import { fetchFromStrapi } from "@/lib/api";
 
 export default function CheckoutPagoPage() {
   const router = useRouter();
 
+  // 1️⃣ HOOKS PRIMERO (Siempre arriba para evitar errores de React)
   const { items, total, clearCart } = useCart();
   const { buyer, shipping } = useCheckout();
 
   const [msg, setMsg] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // 🚫 Si no hay datos mínimos, reencaminar
-  if (!buyer.email) {
-    router.push("/checkout/datos");
-    return null;
-  }
-
-  if (!shipping.codigoPostal) {
-    router.push("/checkout/envio");
-    return null;
-  }
-
-  if (!items || items.length === 0) {
-    router.push("/carrito");
-    return null;
-  }
-
+  // Calculamos valores derivados
   const envio = Number(shipping.costoEnvio ?? 0);
   const totalFinal = Number(total) + envio;
 
+  // 2️⃣ USEMEMO (Siempre se ejecuta antes de cualquier return)
   const payload = useMemo(() => {
     return {
       buyer: {
@@ -52,7 +41,8 @@ export default function CheckoutPagoPage() {
         metodoEnvio: shipping.metodoEnvio,
         costoEnvio: shipping.costoEnvio,
       },
-      items: (items as CartItem[]).map((i) => ({
+      // Mapeamos items asegurándonos que sea un array para evitar crashes
+      items: (items || []).map((i) => ({
         productId: i.productId,
         variantId: i.variantId,
         nombre: i.nombre,
@@ -60,20 +50,61 @@ export default function CheckoutPagoPage() {
         precioUnitario: i.precioUnitario,
         cantidad: i.cantidad,
       })),
-      subtotal: Number(total),
       total: totalFinal,
+
+      // 👇 ACÁ ESTÁ EL CAMBIO CLAVE: Usamos "cliente" (el nombre que le pusiste en Strapi)
+      cliente: 1
     };
   }, [buyer, shipping, items, total, totalFinal]);
 
-  function handleConfirm() {
-    // 🚧 Esto lo va a conectar Joaco al POST real a Strapi.
-    console.log("✅ Payload listo para crear orden:", payload);
+  // 3️⃣ VALIDACIONES Y REDIRECTS (En useEffect para no bloquear el render)
+  useEffect(() => {
+    // Si estamos procesando o acabamos de terminar (msg existe), no redirigimos todavía
+    if (isProcessing || msg) return;
 
-    setMsg("Pedido listo. Falta conectar la creación de orden (Joaco).");
+    if (!buyer.email) {
+      router.push("/checkout/datos");
+    } else if (!shipping.codigoPostal) {
+      router.push("/checkout/envio");
+    } else if (!items || items.length === 0) {
+      router.push("/carrito");
+    }
+  }, [buyer, shipping, items, router, isProcessing, msg]);
 
-    // Si quieren simular “fin de compra” en frontend:
-    // clearCart();
-    // router.push("/carrito");
+  // 4️⃣ FUNCIÓN DE CONFIRMACIÓN
+  async function handleConfirm() {
+    setIsProcessing(true);
+    setMsg(null);
+    console.log("🚀 Enviando orden a Strapi...", payload);
+
+    try {
+      // Usamos /ordens porque ese es el plural que generó tu Strapi
+      const response = await fetchFromStrapi("/ordens", {
+        method: "POST",
+        body: JSON.stringify({ data: payload }),
+      });
+
+      console.log("✅ Orden creada con éxito:", response);
+
+      // Limpiamos carrito y mostramos mensaje
+      clearCart();
+      setMsg("¡Compra realizada con éxito! Redirigiendo...");
+
+      setTimeout(() => {
+        router.push("/");
+      }, 2000);
+
+    } catch (error) {
+      console.error("❌ Error creando la orden:", error);
+      setMsg("Hubo un error al procesar tu pedido. Intenta nuevamente.");
+      setIsProcessing(false); // Solo desbloqueamos si falló
+    }
+  }
+
+  // 5️⃣ RENDER CONDICIONAL (Al final de todo)
+  // Si falta info crítica y NO estamos mostrando el mensaje de éxito, retornamos null
+  if ((!buyer.email || !shipping.codigoPostal || !items || items.length === 0) && !msg) {
+    return null;
   }
 
   return (
@@ -81,7 +112,7 @@ export default function CheckoutPagoPage() {
       <Stepper currentStep={4} />
 
       <div className="mt-10 grid gap-10 md:grid-cols-[1fr_420px]">
-        {/* Pago (placeholder) */}
+        {/* Sección de Pago */}
         <section className="rounded-2xl bg-[#FCFAF6] p-6 shadow-sm">
           <h1 className="text-xl font-semibold text-[#333333]">Pago</h1>
           <p className="mt-2 text-sm text-[#5C5149]">
@@ -113,13 +144,18 @@ export default function CheckoutPagoPage() {
             </div>
           </div>
 
-          {msg && <p className="mt-4 text-sm text-[#333333]">{msg}</p>}
+          {msg && (
+            <div className={`mt-4 rounded-lg p-3 text-sm font-medium ${msg.includes("error") ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>
+              {msg}
+            </div>
+          )}
 
           <button
             onClick={handleConfirm}
-            className="mt-6 w-full rounded-2xl bg-[#5F6B58] px-6 py-3 font-medium text-white hover:opacity-95"
+            disabled={isProcessing}
+            className="mt-6 w-full rounded-2xl bg-[#5F6B58] px-6 py-3 font-medium text-white hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            Confirmar compra
+            {isProcessing ? "Procesando..." : "Confirmar compra"}
           </button>
         </section>
 
@@ -128,7 +164,7 @@ export default function CheckoutPagoPage() {
           <h2 className="text-lg font-semibold text-[#333333]">Resumen</h2>
 
           <div className="mt-4 space-y-3">
-            {(items as CartItem[]).map((item) => {
+            {(items || []).map((item) => {
               const key = `${item.productId}-${item.variantId ?? "noVar"}`;
               const lineTotal = item.precioUnitario * item.cantidad;
 
@@ -160,14 +196,6 @@ export default function CheckoutPagoPage() {
               <span className="text-[#333333]">${totalFinal.toLocaleString("es-AR")}</span>
             </div>
           </div>
-
-          {/* Debug opcional: para Joaco */}
-          <details className="mt-6 rounded-xl border p-3 text-xs text-[#5C5149]">
-            <summary className="cursor-pointer">Ver payload (para dev)</summary>
-            <pre className="mt-2 whitespace-pre-wrap break-words">
-              {JSON.stringify(payload, null, 2)}
-            </pre>
-          </details>
         </aside>
       </div>
     </div>

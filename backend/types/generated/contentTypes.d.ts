@@ -566,6 +566,38 @@ export interface ApiOpinionOpinion extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiOrdenOrden extends Struct.CollectionTypeSchema {
+  collectionName: 'ordens';
+  info: {
+    displayName: 'Orden';
+    pluralName: 'ordens';
+    singularName: 'orden';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    buyer: Schema.Attribute.JSON;
+    cliente: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    items: Schema.Attribute.JSON;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::orden.orden'> &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    shipping: Schema.Attribute.JSON;
+    total: Schema.Attribute.Decimal;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiProductoProducto extends Struct.CollectionTypeSchema {
   collectionName: 'productos';
   info: {
@@ -1101,7 +1133,6 @@ export interface PluginUsersPermissionsUser
   };
   options: {
     draftAndPublish: false;
-    timestamps: true;
   };
   attributes: {
     blocked: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
@@ -1121,6 +1152,7 @@ export interface PluginUsersPermissionsUser
       'plugin::users-permissions.user'
     > &
       Schema.Attribute.Private;
+    ordens: Schema.Attribute.Relation<'oneToMany', 'api::orden.orden'>;
     password: Schema.Attribute.Password &
       Schema.Attribute.Private &
       Schema.Attribute.SetMinMaxLength<{
@@ -1160,6 +1192,7 @@ declare module '@strapi/strapi' {
       'api::categoria.categoria': ApiCategoriaCategoria;
       'api::home.home': ApiHomeHome;
       'api::opinion.opinion': ApiOpinionOpinion;
+      'api::orden.orden': ApiOrdenOrden;
       'api::producto.producto': ApiProductoProducto;
       'api::variante.variante': ApiVarianteVariante;
       'plugin::content-releases.release': PluginContentReleasesRelease;
