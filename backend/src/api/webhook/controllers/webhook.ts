@@ -6,16 +6,15 @@ const payment = new Payment(client);
 
 type EstadoOrden = 'pendiente' | 'pagado' | 'fallido';
 
-export default factories.createCoreController('api::orden.orden', ({ strapi }) => ({
-    // Agregamos la función webhook aquí
-    async webhook(ctx: any) {
+export default {
+    async recibir(ctx: any) { // Le llamamos 'recibir'
         try {
             const query = ctx.request.query;
             const body = ctx.request.body;
             let paymentId = body?.data?.id || query?.id;
             let type = body?.type || query?.topic;
 
-            // console.log(`🔔 Webhook en Ordenes. ID: ${paymentId}, Type: ${type}`);
+            // console.log(`🔔 Webhook Nuevo. ID: ${paymentId}, Type: ${type}`);
 
             if (type === 'payment' || type === 'merchant_order') {
                 if (!paymentId && type === 'payment') return ctx.send('Falta ID', 400);
@@ -30,7 +29,7 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
 
                 const ordenId = Number(externalReference);
 
-                // Ya estamos en el controller de orden, usamos entityService igual
+                // Actualizamos la orden (aunque estemos en la api 'webhook', podemos tocar 'orden')
                 const orden = await strapi.entityService.findOne('api::orden.orden', ordenId);
 
                 if (orden) {
@@ -45,8 +44,8 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
             }
             ctx.send('OK', 200);
         } catch (error) {
-            console.error('❌ Error Webhook Orden:', error);
+            console.error('❌ Error Webhook:', error);
             ctx.send('Error', 500);
         }
     }
-}));
+};

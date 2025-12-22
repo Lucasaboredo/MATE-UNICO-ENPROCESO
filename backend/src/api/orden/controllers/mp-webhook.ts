@@ -1,4 +1,3 @@
-import { factories } from '@strapi/strapi';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 
 const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN! });
@@ -6,16 +5,15 @@ const payment = new Payment(client);
 
 type EstadoOrden = 'pendiente' | 'pagado' | 'fallido';
 
-export default factories.createCoreController('api::orden.orden', ({ strapi }) => ({
-    // Agregamos la función webhook aquí
-    async webhook(ctx: any) {
+export default {
+    async procesar(ctx: any) { // Le llamamos 'procesar' a la función
         try {
             const query = ctx.request.query;
             const body = ctx.request.body;
             let paymentId = body?.data?.id || query?.id;
             let type = body?.type || query?.topic;
 
-            // console.log(`🔔 Webhook en Ordenes. ID: ${paymentId}, Type: ${type}`);
+            // console.log(`🔔 Webhook Dedicado. ID: ${paymentId}, Type: ${type}`);
 
             if (type === 'payment' || type === 'merchant_order') {
                 if (!paymentId && type === 'payment') return ctx.send('Falta ID', 400);
@@ -30,7 +28,7 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
 
                 const ordenId = Number(externalReference);
 
-                // Ya estamos en el controller de orden, usamos entityService igual
+                // Usamos strapi.entityService para buscar/actualizar la orden
                 const orden = await strapi.entityService.findOne('api::orden.orden', ordenId);
 
                 if (orden) {
@@ -45,8 +43,8 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
             }
             ctx.send('OK', 200);
         } catch (error) {
-            console.error('❌ Error Webhook Orden:', error);
+            console.error('❌ Error Webhook:', error);
             ctx.send('Error', 500);
         }
     }
-}));
+};
