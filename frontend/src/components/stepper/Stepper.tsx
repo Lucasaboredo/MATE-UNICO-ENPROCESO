@@ -30,14 +30,14 @@ export default function Stepper({ currentStep }: { currentStep: number }) {
               <div
                 className={[
                   "flex flex-col items-center gap-2 z-10",
-                  clickable ? "cursor-pointer" : "cursor-not-allowed opacity-60",
+                  clickable ? "cursor-pointer" : "cursor-not-allowed opacity-100",
                 ].join(" ")}
               >
                 <div
                   className={`
                     w-12 h-12 rounded-full flex items-center justify-center
                     bg-white
-                    ${active ? "border-2 border-[#5C5149]" : "border border-transparent"}
+                    ${active ? "border-3 border-[#5C5149]" : "border border-transparent"}
                   `}
                 >
                   <Image src={step.icon} alt={step.label} width={22} height={22} />

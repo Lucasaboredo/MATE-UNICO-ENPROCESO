@@ -36,15 +36,10 @@ export default function CarritoPage() {
           )}
         </div>
 
-        {/* FOOTER */}
-        <div className="mt-16 flex items-center justify-between">
-          <Link
-            href="/checkout"
-            className="bg-[#6B7A63] text-white px-10 py-3 rounded-full font-medium"
-          >
-            Continuar
-          </Link>
-
+      {/* FOOTER */}
+      <div className="mt-16 space-y-10">
+        {/* TOTAL */}
+        <div className="flex justify-end">
           <div className="flex items-center gap-4 bg-[#C9C1B5] px-6 py-3 rounded-full">
             <span className="text-sm">Total</span>
             <span className="font-semibold">
@@ -52,6 +47,17 @@ export default function CarritoPage() {
             </span>
           </div>
         </div>
+
+        {/* BOTÓN CONTINUAR */}
+        <div className="flex justify-center">
+          <Link
+            href="/checkout"
+            className="bg-[#6B7A63] text-white px-16 py-3 rounded-full font-medium"
+          >
+            Continuar
+          </Link>
+        </div>
+      </div>
       </div>
     </div>
   );
