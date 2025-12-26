@@ -1,5 +1,17 @@
 import type { Schema, Struct } from '@strapi/strapi';
 
+export interface FaqSection extends Struct.ComponentSchema {
+  collectionName: 'components_faq_sections';
+  info: {
+    displayName: 'section';
+  };
+  attributes: {
+    descripcion: Schema.Attribute.Blocks;
+    icono: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    titulo: Schema.Attribute.String;
+  };
+}
+
 export interface InventarioVariantes extends Struct.ComponentSchema {
   collectionName: 'components_inventario_variantes';
   info: {
@@ -19,6 +31,7 @@ export interface InventarioVariantes extends Struct.ComponentSchema {
 declare module '@strapi/strapi' {
   export module Public {
     export interface ComponentSchemas {
+      'faq.section': FaqSection;
       'inventario.variantes': InventarioVariantes;
     }
   }

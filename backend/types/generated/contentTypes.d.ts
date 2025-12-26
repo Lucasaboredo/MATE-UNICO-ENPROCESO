@@ -531,6 +531,37 @@ export interface ApiCuponCupon extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiFaqPageFaqPage extends Struct.CollectionTypeSchema {
+  collectionName: 'faq_pages';
+  info: {
+    displayName: 'FAQ Page';
+    pluralName: 'faq-pages';
+    singularName: 'faq-page';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    imagen_footer: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::faq-page.faq-page'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    secciones: Schema.Attribute.Component<'faq.section', true>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiHomeHome extends Struct.CollectionTypeSchema {
   collectionName: 'homes';
   info: {
@@ -1228,6 +1259,7 @@ declare module '@strapi/strapi' {
       'admin::user': AdminUser;
       'api::categoria.categoria': ApiCategoriaCategoria;
       'api::cupon.cupon': ApiCuponCupon;
+      'api::faq-page.faq-page': ApiFaqPageFaqPage;
       'api::home.home': ApiHomeHome;
       'api::opinion.opinion': ApiOpinionOpinion;
       'api::orden.orden': ApiOrdenOrden;

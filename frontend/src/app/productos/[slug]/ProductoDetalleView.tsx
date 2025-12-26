@@ -32,6 +32,9 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
   const [cantidad, setCantidad] = useState(1);
   const [showAllReviews, setShowAllReviews] = useState(false);
 
+  // ✅ NUEVO: feedback visual al agregar
+  const [added, setAdded] = useState(false);
+
   // --- 2. ESTADOS PARA ENVÍO ---
   const [zipCode, setZipCode] = useState("");
   const [shippingCost, setShippingCost] = useState<number | null>(null);
@@ -103,25 +106,34 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
     if (cantidad < currentStock) setCantidad((prev) => prev + 1);
   };
 
-  // --- 6. AGREGAR AL CARRITO (NUEVO) ---
+  // --- 6. AGREGAR AL CARRITO (CON ANIMACIÓN) ---
   const handleAddToCart = () => {
-    const precio = selectedVariant?.precio ?? producto.precioBase;
+    try {
+      const precio = selectedVariant?.precio ?? producto.precioBase;
 
-    const item: CartItem = {
-      productId: producto.id,
-      variantId: selectedVariant?.id,
-      nombre: selectedVariant
-        ? `${producto.nombre} - ${selectedVariant.nombre}`
-        : producto.nombre,
-      slug: producto.slug,
-      precioUnitario: precio,
-      cantidad,
-      imagenUrl: selectedImage,
-      stock: selectedVariant?.stock ?? 999999, // 👈 CLAVE
-    };
+      const item: CartItem = {
+        productId: producto.id,
+        variantId: selectedVariant?.id,
+        nombre: selectedVariant
+          ? `${producto.nombre} - ${selectedVariant.nombre}`
+          : producto.nombre,
+        slug: producto.slug,
+        precioUnitario: precio,
+        cantidad,
+        imagenUrl: selectedImage,
+        stock: selectedVariant?.stock ?? 999999, // 👈 CLAVE
+      };
 
-    console.log("🛒 AGREGANDO AL CARRITO:", item);
-    addToCart(item);
+      console.log("🛒 AGREGANDO AL CARRITO:", item);
+
+      addToCart(item);
+
+      // ✅ Feedback visual 1s
+      setAdded(true);
+      window.setTimeout(() => setAdded(false), 1000);
+    } catch (e) {
+      console.error("❌ Error al agregar al carrito:", e);
+    }
   };
 
   return (
@@ -275,16 +287,18 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
               </div>
 
               <button
-                onClick={handleAddToCart}  // ✅ AHORA SÍ FUNCIONA
+                onClick={handleAddToCart}
                 disabled={isOutOfStock}
-                className={`flex-1 text-white text-sm font-semibold uppercase tracking-wide py-4 px-6 rounded-full transition shadow-md hover:shadow-lg transform 
+                className={`flex-1 text-white text-sm font-semibold uppercase tracking-wide py-4 px-6 rounded-full transition-all duration-300 shadow-md hover:shadow-lg transform
                   ${
                     isOutOfStock
                       ? "bg-gray-400 cursor-not-allowed hover:transform-none shadow-none"
+                      : added
+                      ? "bg-green-600 scale-[1.03] ring-2 ring-green-300"
                       : "bg-[#4A4A40] hover:bg-[#3E3E35] hover:-translate-y-0.5"
                   }`}
               >
-                {isOutOfStock ? "Sin Stock" : "Añadir al carrito"}
+                {isOutOfStock ? "Sin Stock" : added ? "✓ Añadido" : "Añadir al carrito"}
               </button>
             </div>
 

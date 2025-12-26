@@ -51,7 +51,7 @@ export default function CheckoutPagoPage() {
   const { items, clearCart } = useCart();
   const { buyer, shipping } = useCheckout();
 
-  /* ================= ESTADO ENVÍO (REAL) ================= */
+  /* ================= ENVÍO ================= */
   const [envioPrecio, setEnvioPrecio] = useState(0);
   const [envioDemora, setEnvioDemora] = useState<string | null>(null);
 
@@ -73,7 +73,7 @@ export default function CheckoutPagoPage() {
     else if (!items || items.length === 0) router.push("/carrito");
   }, [buyer, shipping, items, router]);
 
-  /* ================= CALCULAR ENVÍO (CLAVE) ================= */
+  /* ================= CALCULAR ENVÍO ================= */
   useEffect(() => {
     async function calcularEnvio() {
       if (!shipping?.codigoPostal) return;
@@ -85,7 +85,6 @@ export default function CheckoutPagoPage() {
       });
 
       const data = await res.json();
-
       setEnvioPrecio(Number(data.price ?? 0));
       setEnvioDemora(data.delay ?? null);
     }
@@ -93,7 +92,7 @@ export default function CheckoutPagoPage() {
     calcularEnvio();
   }, [shipping?.codigoPostal]);
 
-  /* ================= SUBTOTAL PRODUCTOS ================= */
+  /* ================= SUBTOTAL ================= */
   const subtotal = useMemo(() => {
     return (items || []).reduce((acc: number, item: any) => {
       return (
@@ -104,7 +103,7 @@ export default function CheckoutPagoPage() {
     }, 0);
   }, [items]);
 
-  /* ================= TOTALES REALES ================= */
+  /* ================= TOTALES ================= */
   const totalBase = subtotal + envioPrecio;
   const totalPagar = Math.max(totalBase - descuento, 0);
 
@@ -123,7 +122,7 @@ export default function CheckoutPagoPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             codigo: codigoCupon,
-            total: totalBase, // 👈 PRODUCTOS + ENVÍO
+            total: totalBase, // productos + envío
           }),
         }
       );
@@ -131,7 +130,8 @@ export default function CheckoutPagoPage() {
       const data = await res.json();
       if (!res.ok) throw new Error();
 
-      setDescuento(Number(data.descuento) || 0);
+      setDescuento(Math.max(Number(data.descuento) || 0, 0));
+      setCuponMsg("Cupón aplicado correctamente");
     } catch {
       setDescuento(0);
       setCuponMsg("Cupón inválido");
@@ -164,7 +164,7 @@ export default function CheckoutPagoPage() {
 
       const orderId = orden.data.id;
 
-      // 2️⃣ Descuento proporcional
+      // 2️⃣ Factor de descuento proporcional
       const factor =
         descuento > 0 && totalBase > 0
           ? descuento / totalBase
@@ -226,17 +226,14 @@ export default function CheckoutPagoPage() {
                 />
                 <div>
                   <p className="font-medium">{item.nombre}</p>
-                  <p className="text-xs">Cantidad: {item.cantidad}</p>
+                  <p className="text-xs">
+                    Cantidad: {item.cantidad}
+                  </p>
                 </div>
               </div>
 
-              <div className="text-right">
-                <p className="text-sm">
-                  Total: ${subtotal.toLocaleString("es-AR")}
-                </p>
-                <p className="text-xs opacity-80">
-                  Envío: ${envioPrecio.toLocaleString("es-AR")}
-                </p>
+              <div className="text-right text-sm">
+                ${(item.precioUnitario * item.cantidad).toLocaleString("es-AR")}
               </div>
             </div>
           ))}
@@ -247,7 +244,7 @@ export default function CheckoutPagoPage() {
           <div className="flex items-center gap-3">
             <input
               value={codigoCupon}
-              disabled={cuponAplicado}
+              disabled={cuponAplicado || aplicandoCupon}
               onChange={(e) =>
                 setCodigoCupon(e.target.value.toUpperCase())
               }
@@ -271,7 +268,13 @@ export default function CheckoutPagoPage() {
           </div>
 
           {cuponMsg && (
-            <span className="text-xs text-red-600">
+            <span
+              className={`text-xs ${
+                cuponAplicado
+                  ? "text-green-700"
+                  : "text-red-600"
+              }`}
+            >
               {cuponMsg}
             </span>
           )}
@@ -279,8 +282,22 @@ export default function CheckoutPagoPage() {
 
         {/* TOTAL FINAL */}
         <div className="mt-14 flex justify-end">
-          <div className="rounded-full bg-[#6B5E54] px-8 py-3 text-white font-semibold">
-            Total a pagar: ${totalPagar.toLocaleString("es-AR")}
+          <div className="flex flex-col items-end gap-1">
+            {cuponAplicado && (
+              <span className="text-sm text-gray-500 line-through">
+                ${totalBase.toLocaleString("es-AR")}
+              </span>
+            )}
+
+            <div className="rounded-full bg-[#6B5E54] px-8 py-3 text-white font-semibold">
+              Total a pagar: ${totalPagar.toLocaleString("es-AR")}
+            </div>
+
+            {cuponAplicado && (
+              <span className="text-xs text-green-700 font-medium">
+                Ahorrás ${descuento.toLocaleString("es-AR")}
+              </span>
+            )}
           </div>
         </div>
 
@@ -292,9 +309,7 @@ export default function CheckoutPagoPage() {
             className="flex items-center gap-3 rounded-full bg-[#009EE3] px-7 py-3 text-white"
           >
             <img src="/mercadopago.svg" className="h-11" />
-            {isProcessing
-              ? "Redirigiendo..."
-              : ""}
+            {isProcessing ? "Redirigiendo..." : ""}
           </button>
         </div>
 
