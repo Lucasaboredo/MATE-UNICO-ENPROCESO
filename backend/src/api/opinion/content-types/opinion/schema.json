@@ -1,0 +1,47 @@
+{
+  "kind": "collectionType",
+  "collectionName": "opinions",
+  "info": {
+    "singularName": "opinion",
+    "pluralName": "opinions",
+    "displayName": "Opinion",
+    "description": "Reseñas de usuarios con moderación"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Puntuacion": {
+      "type": "integer",
+      "required": true,
+      "min": 1,
+      "max": 5
+    },
+    "Texto": {
+      "type": "text",
+      "required": true
+    },
+    "estado": {
+      "type": "enumeration",
+      "enum": [
+        "pendiente",
+        "aprobada",
+        "rechazada"
+      ],
+      "default": "pendiente"
+    },
+    "producto": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::producto.producto",
+      "inversedBy": "opinions"
+    },
+    "usuario": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "opinions"
+    }
+  }
+}

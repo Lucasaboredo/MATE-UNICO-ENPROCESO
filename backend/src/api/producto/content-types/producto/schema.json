@@ -1,0 +1,85 @@
+{
+  "kind": "collectionType",
+  "collectionName": "productos",
+  "info": {
+    "singularName": "producto",
+    "pluralName": "productos",
+    "displayName": "Producto"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "nombre": {
+      "type": "string",
+      "required": true
+    },
+    "descripcion": {
+      "type": "string"
+    },
+    "precioBase": {
+      "type": "decimal",
+      "required": true
+    },
+    "activo": {
+      "type": "boolean",
+      "default": true
+    },
+    "material": {
+      "type": "string"
+    },
+    "variantes": {
+      "type": "component",
+      "component": "inventario.variantes",
+      "repeatable": true
+    },
+    "imagen": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "combo": {
+      "type": "enumeration",
+      "enum": [
+        "mate",
+        "mate_bombilla",
+        "mate_bombilla_bolso"
+      ]
+    },
+    "color": {
+      "type": "enumeration",
+      "enum": [
+        "blanco",
+        "negro",
+        "gris",
+        "marron",
+        "bordo"
+      ]
+    },
+    "categoria": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::categoria.categoria"
+    },
+    "destacado": {
+      "type": "boolean",
+      "default": false
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "nombre"
+    },
+    "opinions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::opinion.opinion",
+      "mappedBy": "producto"
+    }
+  }
+}

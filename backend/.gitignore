@@ -1,0 +1,57 @@
+############################
+# OS / EDITORES
+############################
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+.Spotlight-V100
+.Trashes
+._*
+Thumbs.db
+Desktop.ini
+*~
+
+############################
+# Logs
+############################
+*.log
+
+############################
+# Node
+############################
+node_modules
+.pnp.*
+.yarn/*
+!.yarn/cache
+!.yarn/unplugged
+!.yarn/patches
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+############################
+# Build
+############################
+dist
+build
+.cache
+
+############################
+# Env (NO subir)
+############################
+.tmp/
+.env
+
+############################
+# Strapi
+############################
+.strapi-updater.json
+.strapi-cloud.json
+
+############################
+# ⚠️ MUY IMPORTANTE
+# NO ignorar la DB ni uploads
+############################
+# .tmp        ← DEBE VERSIONARSE
+# public/uploads ← DEBE VERSIONARSE

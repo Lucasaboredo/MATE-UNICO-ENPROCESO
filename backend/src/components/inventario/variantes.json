@@ -1,0 +1,27 @@
+{
+  "collectionName": "components_inventario_variantes",
+  "info": {
+    "displayName": "Variantes"
+  },
+  "options": {},
+  "attributes": {
+    "nombre": {
+      "type": "string",
+      "required": true
+    },
+    "stock": {
+      "type": "integer",
+      "required": true,
+      "default": 0
+    },
+    "precio": {
+      "type": "decimal"
+    },
+    "codigo_color": {
+      "type": "string"
+    },
+    "indice_imagen": {
+      "type": "integer"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "faq_pages",
+  "info": {
+    "singularName": "faq-page",
+    "pluralName": "faq-pages",
+    "displayName": "FAQ Page"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "secciones": {
+      "type": "component",
+      "component": "faq.section",
+      "repeatable": true
+    },
+    "imagen_footer": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    }
+  }
+}
