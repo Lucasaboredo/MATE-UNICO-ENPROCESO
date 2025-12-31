@@ -3,10 +3,25 @@
 import Stepper from "@/components/stepper/Stepper";
 import CartItemRow from "@/components/cart/CartItemRow";
 import { useCart } from "@/lib/cartContext";
-import Link from "next/link";
+// ✅ IMPORTAMOS AUTH Y ROUTER
+import { useAuth } from "@/lib/authContext";
+import { useRouter } from "next/navigation";
 
 export default function CarritoPage() {
   const { items, total } = useCart();
+  // ✅ HOOKS PARA VERIFICAR LOGIN
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const handleContinuar = () => {
+    if (user) {
+      // Si está logueado, pasa al checkout
+      router.push("/checkout");
+    } else {
+      // Si NO está logueado, lo mandamos a registrarse/login
+      router.push("/login?redirect=/checkout");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#FCFAF6]">
@@ -48,14 +63,14 @@ export default function CarritoPage() {
           </div>
         </div>
 
-        {/* BOTÓN CONTINUAR */}
+        {/* BOTÓN CONTINUAR (Ahora con lógica) */}
         <div className="flex justify-center">
-          <Link
-            href="/checkout"
-            className="bg-[#6B7A63] text-white px-16 py-3 rounded-full font-medium"
+          <button
+            onClick={handleContinuar}
+            className="bg-[#6B7A63] text-white px-16 py-3 rounded-full font-medium hover:bg-[#5a6652] transition-colors"
           >
             Continuar
-          </Link>
+          </button>
         </div>
       </div>
       </div>

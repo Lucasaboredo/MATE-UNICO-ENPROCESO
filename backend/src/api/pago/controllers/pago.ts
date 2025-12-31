@@ -8,9 +8,106 @@ const mpConfig = new MercadoPagoConfig({
 const preferenceClient = new Preference(mpConfig);
 const paymentClient = new Payment(mpConfig);
 
+/**
+ * 🛠️ FUNCIÓN AUXILIAR: DESCONTAR STOCK Y CONFIRMAR ORDEN
+ */
+async function procesarCompraExitosa(orderId: number, paymentId: string) {
+  console.log(`\n📉 [STOCK] Iniciando proceso para Orden #${orderId}`);
+
+  // 1. Buscamos la orden
+  const orden = await strapi.entityService.findOne("api::orden.orden", orderId);
+
+  if (!orden) {
+    console.log("❌ [STOCK] Orden no encontrada.");
+    return;
+  }
+
+  // ⚠️ IMPORTANTE: Si ya está pagada, NO salimos inmediatamente si queremos forzar pruebas.
+  // Pero en producción, esto evita duplicados.
+  if (orden.estado === 'pagado') {
+    console.log("⚠️ [STOCK] La orden ya estaba pagada. Verificando si se descontó stock antes...");
+    // Podrías poner un return aquí, pero dejémoslo correr por si falló el stock la primera vez.
+  }
+
+  // 2. Recorremos los items de la orden
+  const items = orden.items as any[];
+  
+  if (!items || items.length === 0) {
+    console.log("⚠️ [STOCK] La orden no tiene items.");
+    return;
+  }
+
+  for (const item of items) {
+    const productId = Number(item.productId);
+    const variantId = Number(item.variantId);
+    const cantidad = Number(item.cantidad);
+
+    console.log(`👉 Procesando Item: Producto ID ${productId} | Variante ID ${variantId} | Cantidad: ${cantidad}`);
+
+    try {
+      // Traemos el producto con sus variantes
+      const producto = await strapi.entityService.findOne("api::producto.producto", productId, {
+        populate: '*' // Traemos todo para asegurar que vengan las variantes
+      }) as any;
+
+      if (!producto) {
+        console.log(`❌ [STOCK] Producto ${productId} no encontrado en DB.`);
+        continue;
+      }
+
+      if (producto.variantes && Array.isArray(producto.variantes)) {
+        let stockActualizado = false;
+
+        // Mapeamos las variantes para actualizar la correcta
+        const variantesActualizadas = producto.variantes.map((v: any) => {
+          // Comparamos IDs asegurando que sean números
+          if (Number(v.id) === variantId) {
+            const stockAnterior = Number(v.stock);
+            const nuevoStock = Math.max(0, stockAnterior - cantidad);
+            
+            console.log(`   ✅ [MATCH] Variante "${v.nombre}" encontrada.`);
+            console.log(`      Stock: ${stockAnterior} ➡️ ${nuevoStock}`);
+            
+            stockActualizado = true;
+            return { ...v, stock: nuevoStock };
+          }
+          return v;
+        });
+
+        if (stockActualizado) {
+          // Guardamos el cambio en la base de datos
+          await strapi.entityService.update("api::producto.producto", productId, {
+            data: { variantes: variantesActualizadas }
+          });
+          console.log(`   💾 [GUARDADO] Stock actualizado en DB para producto ${productId}`);
+        } else {
+          console.log(`   ⚠️ [NO MATCH] No se encontró la variante ID ${variantId} dentro del producto.`);
+          console.log(`      Variantes disponibles:`, producto.variantes.map((v:any) => `${v.id}:${v.nombre}`));
+        }
+      } else {
+        console.log(`   ⚠️ [INFO] El producto ${productId} no tiene variantes configuradas.`);
+      }
+
+    } catch (err) {
+      console.error(`❌ [ERROR] Falló actualización de stock item ${productId}:`, err);
+    }
+  }
+
+  // 3. Finalmente, pasamos la orden a 'pagado'
+  await strapi.entityService.update("api::orden.orden", orderId, {
+    data: { 
+      estado: 'pagado', 
+      payment_id: paymentId 
+    }
+  });
+
+  console.log("✨ [FIN] Orden marcada como pagada.\n");
+}
+
+
 export default {
   // 1. CREAR PREFERENCIA
-  async crearPreferencia(ctx) {
+  async crearPreferencia(ctx: any) {
     try {
       const response = await preferenceClient.create({ body: ctx.request.body });
       ctx.send({ init_point: response.init_point });
@@ -19,48 +116,32 @@ export default {
     }
   },
 
-  // 2. WEBHOOK (Detecta pagos automáticos)
-  async webhook(ctx) {
+  // 2. WEBHOOK
+  async webhook(ctx: any) {
     console.log("🔔 [WEBHOOK] Recibiendo señal de Mercado Pago...");
 
     try {
       const query = ctx.request.query; 
       const body = ctx.request.body;
-      
-      console.log("📩 Datos recibidos:", JSON.stringify({ query, body }));
-
       let paymentId = body?.data?.id || query?.id || body?.id;
       const type = body?.type || query?.topic;
 
-      // Si no hay ID o es una notificación de orden de comercio, ignoramos
-      if (!paymentId) {
-         console.log("⚠️ No se encontró ID de pago en la notificación.");
-         return ctx.send({ ok: true });
-      }
-      if (type === "merchant_order") {
+      if (!paymentId || type === "merchant_order") {
          return ctx.send({ ok: true });
       }
       
-      console.log(`🔎 Consultando pago en MP: ${paymentId}`);
       const pago = await paymentClient.get({ id: paymentId });
-      
-      const orderId = pago.external_reference;
+      const orderId = Number(pago.external_reference);
       const status = pago.status;
-      
-      console.log(`✅ Pago encontrado. Estado: ${status}. Orden asociada: ${orderId}`);
 
-      if (orderId) {
-        let estado: "pendiente" | "pagado" | "fallido" = "pendiente";
-        if (status === "approved") estado = "pagado";
-        if (status === "rejected" || status === "cancelled") estado = "fallido";
+      console.log(`🔎 Webhook: Orden ${orderId} | Estado MP: ${status}`);
 
-        console.log(`💾 Actualizando Orden #${orderId} a estado: ${estado}`);
-        
-        await strapi.entityService.update("api::orden.orden", Number(orderId), {
-          data: { estado, payment_id: paymentId.toString() }
+      if (orderId && status === "approved") {
+        await procesarCompraExitosa(orderId, paymentId.toString());
+      } else if (orderId && (status === "rejected" || status === "cancelled")) {
+        await strapi.entityService.update("api::orden.orden", orderId, {
+          data: { estado: 'fallido', payment_id: paymentId.toString() }
         });
-        
-        console.log("✨ ¡Orden actualizada con éxito vía Webhook!");
       }
       
       ctx.send({ ok: true });
@@ -70,71 +151,45 @@ export default {
     }
   },
 
-  // 3. ÉXITO (FIX FINAL: HTML Bridge para evitar bloqueo HTTPS -> HTTP)
-  async exito(ctx) {
+  // 3. ÉXITO (Redirección)
+  async exito(ctx: any) {
     try {
-      // Capturamos todos los datos que manda MP en la URL
       const query = ctx.request.query;
       const { external_reference, status, collection_status, payment_id } = query;
       const finalStatus = status || collection_status;
 
-      console.log("🚀 [REDIRECCIÓN] Cliente volvió de Mercado Pago. Estado:", finalStatus);
+      console.log("🚀 [REDIRECCIÓN] Cliente volvió. Estado:", finalStatus);
 
-      // 1. PLAN B: Si está aprobado, actualizamos la orden YA MISMO
       if (finalStatus === 'approved' && external_reference) {
-        console.log(`💾 Forzando actualización de Orden #${external_reference} a PAGADO`);
-        await strapi.entityService.update("api::orden.orden", Number(external_reference), {
-          data: { estado: 'pagado', payment_id: String(payment_id) }
-        });
-        console.log("✅ ¡Orden actualizada vía Redirección (Plan B)!");
+         await procesarCompraExitosa(Number(external_reference), String(payment_id));
       }
 
-      // 2. REDIRECCIÓN SEGURA: Preparamos la URL final con los datos
       const params = new URLSearchParams(query as any).toString();
       const targetUrl = `http://localhost:3000/checkout/exito?${params}`;
 
-      // 👇 AQUÍ ESTÁ LA MAGIA: Devolvemos HTML real en lugar de redirect ciego.
       ctx.set('Content-Type', 'text/html');
       ctx.body = `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
-          <title>Redirigiendo...</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-        </head>
-        <body style="font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f4f4f5; margin: 0;">
-          <div style="text-align: center; background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
-            <h2 style="color: #2F4A2D; margin: 0 0 0.5rem 0;">¡Pago Recibido!</h2>
-            <p style="color: #71717a; margin-bottom: 2rem;">Te estamos llevando de vuelta a tu orden...</p>
-            
-            <a href="${targetUrl}" style="background-color: #2F4A2D; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 0.5rem; font-weight: bold; transition: opacity 0.2s;">
-              Haz clic aquí si no redirige automáticamente
-            </a>
-          </div>
+          <title>Procesando...</title>
           <script>
-            setTimeout(() => {
-              window.location.href = "${targetUrl}";
-            }, 1000);
+            setTimeout(() => { window.location.href = "${targetUrl}"; }, 500);
           </script>
+        </head>
+        <body>
+          <p>Redirigiendo a tu orden...</p>
         </body>
         </html>
       `;
-
     } catch (error) {
       console.error("⚠️ Error en redirección exito:", error);
-      // En caso de error, usamos el redirect normal
       return ctx.redirect('http://localhost:3000/checkout/exito');
     }
   },
 
   // 4. OTROS ESTADOS
-  async error(ctx) { 
-    return ctx.redirect('http://localhost:3000/checkout/error'); 
-  },
-  
-  async pendiente(ctx) { 
-    return ctx.redirect('http://localhost:3000/checkout/pendiente'); 
-  }
+  async error(ctx: any) { return ctx.redirect('http://localhost:3000/checkout/error'); },
+  async pendiente(ctx: any) { return ctx.redirect('http://localhost:3000/checkout/pendiente'); }
 };

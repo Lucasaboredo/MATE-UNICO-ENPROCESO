@@ -33,7 +33,7 @@ export default function Footer() {
                   <Link href="/productos">Productos</Link>
                 </li>
                 <li>
-                  <Link href="/preguntas-frecuentes">
+                  <Link href="/faq">
                     Preguntas Frecuentes
                   </Link>
                 </li>
@@ -76,7 +76,7 @@ export default function Footer() {
         <div
           className={`${inter.className} mx-auto max-w-[1400px] px-10 py-3 text-[12px] font-bold text-[#333333]`}
         >
-          Copyright Mate Unico - 2025. Todos los derechos reservados
+          Copyright Mate Unico - 2026. Todos los derechos reservados
         </div>
       </div>
     </footer>

@@ -14,7 +14,8 @@ export default function CheckoutDatosPage() {
 
   const { items, total } = useCart();
   const { buyer, setBuyer } = useCheckout();
-  const { user } = useAuth(); // Importamos Auth
+  // ✅ 1. TRAEMOS 'loading' ADEMÁS DE 'user'
+  const { user, loading } = useAuth(); 
 
   const [form, setForm] = useState({
     nombre: buyer.nombre,
@@ -25,12 +26,20 @@ export default function CheckoutDatosPage() {
 
   const [error, setError] = useState<string | null>(null);
 
-  // 👇 PRE-CARGA INTELIGENTE
+  // ✅ 2. PROTECCIÓN DE RUTA (EL CANDADO)
+  useEffect(() => {
+    // Si ya terminó de cargar y NO hay usuario...
+    if (!loading && !user) {
+      // ...lo echamos al login
+      router.push("/login?redirect=/checkout/datos");
+    }
+  }, [user, loading, router]);
+
+  // Pre-carga de datos
   useEffect(() => {
     if (user) {
       setForm((prev) => ({
         ...prev,
-        // Usamos los campos nuevos 'nombre' y 'apellido' si existen
         nombre: prev.nombre || user.nombre || "",
         apellido: prev.apellido || user.apellido || "",
         email: prev.email || user.email || "",
@@ -38,6 +47,10 @@ export default function CheckoutDatosPage() {
       }));
     }
   }, [user]);
+
+  // ✅ 3. RETURN TEMPRANO PARA EVITAR FLASH
+  if (loading) return <div className="py-20 text-center text-gray-500">Cargando sesión...</div>;
+  if (!user) return null; // No mostramos nada mientras redirige
 
   // Si el carrito está vacío...
   if (!items || items.length === 0) {
@@ -124,7 +137,9 @@ export default function CheckoutDatosPage() {
                 type="email"
                 value={form.email}
                 onChange={handleChange}
-                className="mt-1 w-full rounded-xl border border-[#e7e2d9] bg-white px-4 py-3 text-[#333333] outline-none focus:border-[#5F6B58]"
+                // Deshabilitamos email si viene del usuario para evitar conflictos
+                disabled={!!user?.email} 
+                className={`mt-1 w-full rounded-xl border border-[#e7e2d9] px-4 py-3 text-[#333333] outline-none focus:border-[#5F6B58] ${user?.email ? 'bg-gray-100 text-gray-500' : 'bg-white'}`}
               />
             </div>
 
