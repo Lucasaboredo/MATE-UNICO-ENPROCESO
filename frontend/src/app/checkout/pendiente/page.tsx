@@ -2,85 +2,86 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function CheckoutPendientePage() {
+function PendienteContent() {
   const params = useSearchParams();
 
-  const orderNumber =
-    params.get("external_reference") ||
-    params.get("merchant_order_id") ||
-    params.get("order_id") ||
-    "";
-
-  const buyerId = params.get("buyer_id") || params.get("payer_id") || "";
-  const amount = params.get("amount") || params.get("total") || "";
+  const orderNumber = params.get("external_reference") || "N/A";
+  const paymentId = params.get("payment_id") || "N/A";
 
   return (
-    <div className="min-h-[calc(100vh-140px)] bg-[#FCFAF6] px-6 py-12">
-      <div className="mx-auto max-w-5xl">
-        <div className="rounded-[28px] bg-[#5C5149] px-6 py-10 md:px-10">
-          <div className="mx-auto w-full max-w-4xl rounded-[22px] bg-[#FCFAF6] px-6 py-10 text-center md:px-10">
-            {/* ✅ Solo mensaje */}
-            <p className="text-sm text-[#333333]">
-              Estamos esperando la confirmación del pago. Puede tardar unos
-              minutos.
-            </p>
-
-            {/* ✅ Imagen */}
-            <div className="mt-8 flex justify-center">
-              <img
-                src="/checkout/pago-pendiente.svg"
-                alt="Pago pendiente"
-                className="h-auto w-full max-w-[760px]"
-              />
-            </div>
-
-            {/* ✅ Datos pedidos */}
-            {(orderNumber || buyerId || amount) && (
-              <div className="mt-8 rounded-xl bg-[#F2EEE8] p-4 text-left text-sm text-[#333333]">
-                {orderNumber && (
-                  <p>
-                    <b>Orden:</b> {orderNumber}
-                  </p>
-                )}
-                {buyerId && (
-                  <p>
-                    <b>ID comprador:</b> {buyerId}
-                  </p>
-                )}
-                {amount && (
-                  <p>
-                    <b>Importe:</b> ${amount}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="mt-10 flex justify-center gap-3 flex-wrap">
-              <Link
-                href="/"
-                className="rounded-full bg-[#5F6B58] px-8 py-3 text-sm font-medium text-white hover:opacity-95"
-              >
-                Volver al home
-              </Link>
-
-              <Link
-                href="/carrito"
-                className="rounded-full bg-[#E5DED6] px-8 py-3 text-sm font-medium text-[#333333] hover:opacity-95"
-              >
-                Ver carrito
-              </Link>
-            </div>
-
-            <p className="mt-6 text-xs text-[#7A6F66]">
-              El estado final se actualiza automáticamente cuando Mercado Pago
-              confirma el pago.
-            </p>
+    <div className="w-full max-w-3xl bg-white rounded-[32px] shadow-xl overflow-hidden border border-gray-100">
+      <div className="px-8 py-12 md:px-12 md:py-16 text-center">
+        
+        {/* 1. Icono de Reloj/Espera */}
+        <div className="mb-6 flex justify-center">
+          <div className="h-16 w-16 bg-amber-50 rounded-full flex items-center justify-center mb-4 animate-pulse">
+            <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
         </div>
+        
+        <h1 className="text-3xl md:text-4xl font-bold text-[#1a1a1a] mb-3 tracking-tight">
+          Pago en proceso...
+        </h1>
+        <p className="text-gray-500 text-lg mb-10 max-w-lg mx-auto leading-relaxed">
+          Tu pago se está procesando. En cuanto se confirme (puede tardar unos minutos o hasta 24hs si pagaste en efectivo), te avisaremos por email.
+        </p>
+
+        {/* 2. Imagen (Pago Pendiente) */}
+        <div className="relative w-full h-auto max-w-[400px] mx-auto mb-10 hover:scale-105 transition-transform duration-500">
+           <img
+            src="/checkout/pago-pendiente.svg"
+            alt="Pago pendiente"
+            className="w-full h-auto drop-shadow-sm"
+          />
+        </div>
+
+        {/* 3. Tarjeta Informativa */}
+        <div className="bg-[#F9F7F2] rounded-2xl p-6 max-w-xl mx-auto border border-[#EBE5D9] mb-8">
+           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
+              <div className="flex flex-col items-center sm:items-start">
+                 <span className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Nº Orden</span>
+                 <span className="font-bold text-lg text-[#1a1a1a]">#{orderNumber}</span>
+              </div>
+              <div className="flex flex-col items-center sm:items-end">
+                 <span className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Estado Actual</span>
+                 <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full font-bold text-xs mt-1">
+                   ⏳ Pendiente de acreditación
+                 </span>
+              </div>
+           </div>
+           <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500">
+             Por favor <b>no vuelvas a comprar</b> el mismo producto hasta que recibas la confirmación final.
+           </div>
+        </div>
+
+        {/* 4. Botón de Acción */}
+        <div className="mt-8">
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center px-10 py-4 text-base font-bold text-white transition-all duration-200 bg-[#1a1a1a] rounded-full hover:bg-[#333] hover:-translate-y-1 shadow-lg"
+          >
+            Volver a la tienda
+          </Link>
+        </div>
+
       </div>
+      
+      {/* Barra de color inferior (Amarilla/Ámbar) */}
+      <div className="h-3 w-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500" />
     </div>
   );
 }
 
-
+export default function CheckoutPendientePage() {
+  return (
+    <div className="min-h-screen bg-[#F2EEE8] flex items-center justify-center px-4 py-12 md:py-20">
+      <Suspense fallback={<div className="text-center p-10">Verificando estado...</div>}>
+        <PendienteContent />
+      </Suspense>
+    </div>
+  );
+}
