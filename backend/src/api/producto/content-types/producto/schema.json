@@ -11,6 +11,10 @@
   },
   "pluginOptions": {},
   "attributes": {
+    "permite_grabado": {
+      "type": "boolean",
+      "default": false
+    },
     "nombre": {
       "type": "string",
       "required": true

@@ -15,11 +15,7 @@ export default function ProductCard({ producto }: Props) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // --- LÓGICA DE ETIQUETAS (Luca) ---
-  // 1. Últimas Unidades: Si el stock total es <= 5 y > 0
-  const totalStock = producto.variantes?.reduce((acc, v) => acc + (v.stock || 0), 0) || 0;
-  const esUltimasUnidades = totalStock > 0 && totalStock <= 5;
-
-  // 2. Más Vendido: Si tiene el flag 'destacado' o muchas opiniones
+  // Más Vendido: Si tiene el flag 'destacado' o muchas opiniones (> 5)
   const tieneMuchasReviews = (producto.opinions?.length || 0) > 5;
   const esMasVendido = producto.destacado || tieneMuchasReviews;
   // ----------------------------------
@@ -65,11 +61,6 @@ export default function ProductCard({ producto }: Props) {
           {esMasVendido && (
             <span className="bg-[#1a1a1a] text-white text-[10px] font-bold px-2 py-1 rounded shadow-md uppercase tracking-wide">
               🔥 Más Vendido
-            </span>
-          )}
-          {esUltimasUnidades && (
-            <span className="bg-[#B91C1C] text-white text-[10px] font-bold px-2 py-1 rounded shadow-md uppercase tracking-wide animate-pulse">
-              ⚡ Últimas Unidades
             </span>
           )}
         </div>

@@ -1,38 +1,28 @@
-export interface Opinion {
-  id: number;
-  Texto: string;
-  Puntuacion: number;
-  estado: 'pendiente' | 'aprobada' | 'rechazada';
-  createdAt: string;
-  usuario?: {
-    data: {
-      attributes: {
-        username: string;
-      }
-    }
-  };
-}
-
-// ... Resto de la interfaz Producto igual ...
-// src/types/product.ts
-
 export interface Imagen {
   id: number;
   url: string;
-  width?: number;
-  height?: number;
 }
 
 export interface Variante {
   id: number;
   nombre: string;
-  color?: string;
-  stock?: number;
-  precio?: number;
+  precio?: number; // Precio específico de la variante (opcional)
+  stock: number;
+  codigo_color?: string; // Hex del color (ej: #000000)
+  indice_imagen?: number; // Qué foto mostrar al seleccionar
+}
 
-  // NUEVOS CAMPOS PARA VISUALIZACIÓN
-  codigo_color?: string; // Hexadecimal (ej: #000000)
-  indice_imagen?: number; // Qué posición de foto usar (0, 1, 2...)
+export interface Opinion {
+  id: number;
+  Puntuacion: number;
+  Texto: string;
+  createdAt: string;
+}
+
+export interface Categoria {
+  id: number;
+  nombre: string;
+  slug: string;
 }
 
 export interface Producto {
@@ -41,14 +31,14 @@ export interface Producto {
   nombre: string;
   descripcion: string;
   precioBase: number;
-  material: string;
   activo: boolean;
+  material?: string;
   slug: string;
-
-  variantes: Variante[];
-  imagen: Imagen[];
+  destacado: boolean;
+  imagen?: Imagen[];
+  variantes?: Variante[];
+  categoria?: Categoria;
   opinions?: Opinion[];
-
-  categoria?: any;
-  destacado?: boolean;
+  // ✨ NUEVO CAMPO
+  permite_grabado: boolean; 
 }

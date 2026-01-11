@@ -1,4 +1,3 @@
-// frontend/src/app/productos/[slug]/ProductoDetalleView.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,7 +10,7 @@ import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/lib/cartContext";
 import type { CartItem } from "@/types/cart";
 
-// ✅ Autenticación (NUEVO para Luca)
+// ✅ Autenticación
 import { useAuth } from "@/lib/authContext";
 
 interface Props {
@@ -19,8 +18,12 @@ interface Props {
   relacionados: Producto[];
 }
 
+// 💰 CONFIGURACIÓN DEL GRABADO
+const COSTO_GRABADO = 5000;
+const CARACTERES_MAXIMOS = 14;
+
 export default function ProductoDetalleView({ producto, relacionados }: Props) {
-  // ✅ carrito
+  // ✅ Carrito
   const { addToCart } = useCart();
   
   // ✅ Auth (Para validar si puede reseñar)
@@ -37,9 +40,13 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
 
   const [cantidad, setCantidad] = useState(1);
   const [showAllReviews, setShowAllReviews] = useState(false);
-
-  // ✅ Feedback visual al agregar al carrito
   const [added, setAdded] = useState(false);
+
+  // ✨ GRABADO
+  const [conGrabado, setConGrabado] = useState(false);
+  const [textoGrabado, setTextoGrabado] = useState("");
+  // 🔴 Estado para el error de validación
+  const [grabadoError, setGrabadoError] = useState("");
 
   // --- 2. ESTADOS PARA ENVÍO ---
   const [zipCode, setZipCode] = useState("");
@@ -47,7 +54,7 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
   const [shippingDelay, setShippingDelay] = useState<string | null>(null);
   const [loadingShipping, setLoadingShipping] = useState(false);
 
-  // --- 3. ESTADOS PARA RESEÑAS (NUEVO - LUCA) ---
+  // --- 3. ESTADOS PARA RESEÑAS ---
   const [rating, setRating] = useState(5);
   const [comentario, setComentario] = useState("");
   const [reviewStatus, setReviewStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
@@ -77,6 +84,9 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
       maximumFractionDigits: 0,
     });
   };
+
+  // 🛠️ LÓGICA CLAVE: ¿Este producto admite grabado? (Desde Strapi)
+  const admiteGrabado = producto.permite_grabado === true;
 
   // --- 5. LÓGICA DE ENVÍO ---
   const handleCalculateShipping = async () => {
@@ -117,30 +127,53 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
   // --- 7. AGREGAR AL CARRITO ---
   const handleAddToCart = () => {
     try {
-      const precio = selectedVariant?.precio ?? producto.precioBase;
+      let precioFinal = selectedVariant?.precio ?? producto.precioBase;
+      let nombreParaCarrito = selectedVariant
+        ? `${producto.nombre} - ${selectedVariant.nombre}`
+        : producto.nombre;
+
+      // ✨ Lógica de Grabado
+      if (conGrabado) {
+        // 🔴 VALIDACIÓN VISUAL
+        if (!textoGrabado.trim()) {
+          setGrabadoError("⚠️ Por favor, escribe el texto para el grabado");
+          return; // Detenemos la función aquí
+        }
+        
+        // Sumamos costo y modificamos el nombre visual
+        precioFinal += COSTO_GRABADO;
+        nombreParaCarrito += ` (Grabado: "${textoGrabado}")`;
+      }
 
       const item: CartItem = {
         productId: producto.id,
         variantId: selectedVariant?.id,
-        nombre: selectedVariant
-          ? `${producto.nombre} - ${selectedVariant.nombre}`
-          : producto.nombre,
+        nombre: nombreParaCarrito,
         slug: producto.slug,
-        precioUnitario: precio,
+        precioUnitario: precioFinal,
         cantidad,
         imagenUrl: selectedImage,
         stock: selectedVariant?.stock ?? 999999,
+        // Metadata extra
+        grabado: conGrabado,
+        textoGrabado: conGrabado ? textoGrabado : undefined,
       };
 
       addToCart(item);
       setAdded(true);
+
+      // Limpiamos selección y errores
+      setConGrabado(false);
+      setTextoGrabado("");
+      setGrabadoError("");
+
       window.setTimeout(() => setAdded(false), 1000);
     } catch (e) {
       console.error("❌ Error al agregar al carrito:", e);
     }
   };
 
-  // --- 8. ENVIAR RESEÑA (NUEVO - LUCA) ---
+  // --- 8. ENVIAR RESEÑA ---
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !token) return;
@@ -149,14 +182,13 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
     setErrorMsg("");
 
     try {
-      // Usamos la URL del backend configurada o localhost por defecto
       const API_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "http://127.0.0.1:1337";
       
       const res = await fetch(`${API_URL}/api/opinions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` // 🔑 Token clave para validar usuario
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
           data: {
@@ -169,7 +201,6 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
 
       if (!res.ok) {
         const errorData = await res.json();
-        // Capturamos el error específico del backend si no compró
         if (res.status === 403) {
           throw new Error("Solo puedes opinar sobre productos que has comprado.");
         }
@@ -188,7 +219,6 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
 
   return (
     <div className="min-h-screen bg-[#F9F7F2] text-[#1a1a1a] pb-20">
-      {/* SECCIÓN SUPERIOR */}
       <div className="container mx-auto px-4 pt-10 lg:pt-16">
         <nav className="text-xs text-gray-500 mb-8 uppercase tracking-wide font-medium">
           <Link href="/">Home</Link> / <Link href="/productos">Productos</Link> /{" "}
@@ -244,8 +274,11 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
               {producto.nombre}
             </h1>
 
-            <p className="text-3xl font-medium text-[#1a1a1a] mb-6">
-              {formatPrice(selectedVariant?.precio || producto.precioBase)}
+            {/* PRECIO DINÁMICO */}
+            <p className="text-3xl font-medium text-[#1a1a1a] mb-6 animate-in fade-in duration-300">
+              {formatPrice(
+                (selectedVariant?.precio || producto.precioBase) + (conGrabado ? COSTO_GRABADO : 0)
+              )}
             </p>
 
             <div className="text-gray-600 text-sm leading-relaxed mb-6 space-y-4 font-normal">
@@ -291,6 +324,76 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
                   <p className="text-xs text-gray-500 mt-2">
                     Stock disponible: {selectedVariant.stock} u.
                   </p>
+                )}
+              </div>
+            )}
+
+            {/* ✨ SECCIÓN DE GRABADO CON ERROR VISUAL ✨ */}
+            {admiteGrabado && !isOutOfStock && (
+              <div className={`mb-8 p-5 bg-[#F4F1EA] border rounded-xl shadow-sm transition-colors ${grabadoError ? 'border-red-400 bg-red-50' : 'border-[#E5E0D8]'}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <div className={`w-6 h-6 rounded flex items-center justify-center border transition-colors ${conGrabado ? 'bg-[#4A4A40] border-[#4A4A40]' : 'bg-white border-gray-300'}`}>
+                      {conGrabado && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      className="hidden"
+                      checked={conGrabado}
+                      onChange={(e) => {
+                        setConGrabado(e.target.checked);
+                        if (!e.target.checked) setGrabadoError(""); // Limpiar error si desmarca
+                      }}
+                    />
+                    <span className="font-bold text-[#4A4A40] text-base">
+                      Quiero grabado personalizado
+                    </span>
+                  </label>
+                  <span className="text-sm font-semibold text-[#4A4A40] bg-white px-2 py-1 rounded border border-[#E5E0D8]">
+                    +{formatPrice(COSTO_GRABADO)}
+                  </span>
+                </div>
+
+                {conGrabado && (
+                  <div className="ml-0 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <p className="text-xs text-gray-500 mb-2">Escribe un nombre, iniciales o una fecha especial:</p>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Ej: Lucas"
+                        maxLength={CARACTERES_MAXIMOS}
+                        value={textoGrabado}
+                        onChange={(e) => {
+                          setTextoGrabado(e.target.value);
+                          if (e.target.value.trim()) setGrabadoError(""); // 🟢 Borrar error al escribir
+                        }}
+                        className={`w-full p-3 pr-16 border rounded-lg focus:outline-none focus:ring-1 transition-all text-sm shadow-inner bg-white 
+                          ${grabadoError 
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-200" 
+                            : "border-gray-300 focus:border-[#4A4A40] focus:ring-[#4A4A40]"
+                          }`}
+                        autoFocus
+                      />
+                      <span className={`absolute right-3 top-3.5 text-xs font-mono ${textoGrabado.length === CARACTERES_MAXIMOS ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                        {textoGrabado.length}/{CARACTERES_MAXIMOS}
+                      </span>
+                    </div>
+
+                    {/* 🔴 MENSAJE DE ERROR ROJO */}
+                    {grabadoError && (
+                      <p className="text-red-600 text-xs font-bold mt-2 animate-pulse">
+                        {grabadoError}
+                      </p>
+                    )}
+                    
+                    {/* BOTÓN SIMULADOR */}
+                    <Link 
+                      href="/simulador"
+                      className="mt-4 block w-full py-3 bg-transparent border border-[#4A4A40] rounded-lg text-[#4A4A40] text-xs font-bold uppercase tracking-widest text-center transition-all hover:bg-[#4A4A40] hover:text-white shadow-sm"
+                    >
+                      ¿Dudas? Probá tu diseño en nuestro Simulador
+                    </Link>
+                  </div>
                 )}
               </div>
             )}
@@ -448,7 +551,7 @@ export default function ProductoDetalleView({ producto, relacionados }: Props) {
             )}
           </div>
 
-          {/* COLUMNA DERECHA: FORMULARIO DE RESEÑA (NUEVO - LUCA) */}
+          {/* COLUMNA DERECHA: FORMULARIO DE RESEÑA */}
           <div className="md:col-span-5">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 sticky top-24">
               <h3 className="text-lg font-bold mb-4 text-[#1a1a1a]">¡Cuéntanos tu experiencia!</h3>

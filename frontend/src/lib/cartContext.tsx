@@ -6,19 +6,17 @@ import type { CartItem } from "@/types/cart";
 interface CartContextType {
   items: CartItem[];
   addToCart: (item: CartItem) => void;
-  removeFromCart: (productId: number, variantId?: number) => void;
-  updateQuantity: (
-    productId: number,
-    variantId: number | undefined,
-    cantidad: number
-  ) => void;
+  removeFromCart: (item: CartItem) => void; // Cambiado para recibir el objeto completo
+  updateQuantity: (item: CartItem, cantidad: number) => void; // Cambiado
   clearCart: () => void;
   total: number;
   totalItems: number;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
-const STORAGE_KEY = "mate-unico-cart";
+
+// Clave para guardar en el navegador
+const STORAGE_KEY = "mate-unico-cart-v3"; // Actualizamos versión para limpiar bugs viejos
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -34,81 +32,64 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
-  /* ACCIONES */
-  const addToCart = (item: CartItem) => {
-    setItems((prev) => {
-      const existing = prev.find(
-        (p) =>
-          p.productId === item.productId &&
-          p.variantId === item.variantId
-      );
+  /* -----------------------------------------------------------
+     HELPER: Generar ID único para comparación
+     Esto soluciona el bug: Diferencia items por grabado
+  ----------------------------------------------------------- */
+  const getSignature = (item: CartItem) => {
+    return `${item.productId}-${item.variantId || 'null'}-${item.grabado ? 'con' : 'sin'}-${item.textoGrabado || ''}`;
+  };
 
-      if (existing) {
-        return prev.map((p) =>
-          p.productId === item.productId &&
-          p.variantId === item.variantId
-            ? {
-                ...p,
-                cantidad: Math.min(
-                  p.cantidad + item.cantidad,
-                  p.stock
-                ),
-              }
-            : p
-        );
+  /* ACCIONES */
+  const addToCart = (newItem: CartItem) => {
+    setItems((prev) => {
+      const signatureNew = getSignature(newItem);
+      
+      const existingIndex = prev.findIndex(p => getSignature(p) === signatureNew);
+
+      if (existingIndex >= 0) {
+        // Si existe EXACTAMENTE igual, sumamos cantidad
+        const updatedItems = [...prev];
+        const existingItem = updatedItems[existingIndex];
+        
+        updatedItems[existingIndex] = {
+          ...existingItem,
+          cantidad: Math.min(existingItem.cantidad + newItem.cantidad, existingItem.stock),
+        };
+        return updatedItems;
       }
 
-      return [
-        ...prev,
-        { ...item, cantidad: Math.min(item.cantidad, item.stock) },
-      ];
+      // Si es diferente (ej: tiene grabado), se agrega como nuevo
+      return [...prev, newItem];
     });
   };
 
-  const updateQuantity = (
-    productId: number,
-    variantId: number | undefined,
-    cantidad: number
-  ) => {
+  const updateQuantity = (targetItem: CartItem, cantidad: number) => {
+    const signatureTarget = getSignature(targetItem);
+
     setItems((prev) =>
-      prev
-        .map((item) =>
-          item.productId === productId &&
-          item.variantId === variantId
-            ? {
-                ...item,
-                cantidad: Math.min(
-                  Math.max(cantidad, 0),
-                  item.stock
-                ),
-              }
-            : item
-        )
-        .filter((item) => item.cantidad > 0)
+      prev.map((item) => {
+        if (getSignature(item) === signatureTarget) {
+          return {
+            ...item,
+            cantidad: Math.min(Math.max(cantidad, 1), item.stock),
+          };
+        }
+        return item;
+      })
     );
   };
 
-  const removeFromCart = (productId: number, variantId?: number) => {
-    setItems((prev) =>
-      prev.filter(
-        (p) =>
-          !(
-            p.productId === productId &&
-            p.variantId === variantId
-          )
-      )
-    );
+  const removeFromCart = (targetItem: CartItem) => {
+    const signatureTarget = getSignature(targetItem);
+    setItems((prev) => prev.filter((p) => getSignature(p) !== signatureTarget));
   };
 
   const clearCart = () => setItems([]);
 
   /* DERIVADOS */
   const total = useMemo(
-    () =>
-      items.reduce(
-        (acc, item) => acc + item.precioUnitario * item.cantidad,
-        0
-      ),
+    () => items.reduce((acc, item) => acc + item.precioUnitario * item.cantidad, 0),
     [items]
   );
 

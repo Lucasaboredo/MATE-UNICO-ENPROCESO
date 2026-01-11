@@ -2,6 +2,9 @@ import { fetchFromStrapi } from "@/lib/api";
 import ProductoDetalleView from "./ProductoDetalleView";
 import { notFound } from "next/navigation";
 
+// 👇 1. ESTO EVITA QUE NEXT.JS GUARDE CACHÉ VIEJO
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{
     slug: string;
@@ -12,9 +15,10 @@ export default async function Page({ params }: Props) {
   const { slug } = await params;
 
   try {
-    // AHORA SÍ: Usamos populate[opinions] (en inglés y plural)
+    // 👇 2. CAMBIO CLAVE: Agregamos &publicationState=preview
+    // Esto le dice a Strapi: "Dame la versión nueva (Draft), no la vieja publicada"
     const productoRes = await fetchFromStrapi(
-      `/productos?filters[slug][$eq]=${slug}&populate[imagen]=true&populate[variantes]=true&populate[opinions]=true`
+      `/productos?filters[slug][$eq]=${slug}&populate[imagen]=true&populate[variantes]=true&populate[opinions]=true&publicationState=preview`
     );
 
     const producto = productoRes.data?.[0];
@@ -29,11 +33,13 @@ export default async function Page({ params }: Props) {
 
     const relacionados = destacadosRes.data || [];
 
-    // AGREGA ESTO ANTES DEL RETURN:
-    if (producto.opinions && producto.opinions.length > 0) {
+    // ✅ DEBUG: Ver qué ID llega ahora (Debería ser el 13)
+    if (producto.variantes && producto.variantes.length > 0) {
       console.log("------------------------------------------------");
-      console.log("🕵️ DETALLE DE LA OPINIÓN (Mirar nombres de campos):");
-      console.log(JSON.stringify(producto.opinions[0], null, 2));
+      console.log(`🔍 [DEBUG MODO PREVIEW] Variantes de "${producto.nombre}":`);
+      producto.variantes.forEach((v: any) => {
+        console.log(`   👉 Variante: ${v.nombre} | ID: ${v.id} | Stock: ${v.stock}`);
+      });
       console.log("------------------------------------------------");
     }
 

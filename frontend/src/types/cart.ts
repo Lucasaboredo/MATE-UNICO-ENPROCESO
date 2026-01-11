@@ -7,4 +7,7 @@ export interface CartItem {
   cantidad: number;
   imagenUrl: string;
   stock: number;
+  // ✨ NUEVOS CAMPOS PARA GRABADO
+  grabado?: boolean;
+  textoGrabado?: string;
 }

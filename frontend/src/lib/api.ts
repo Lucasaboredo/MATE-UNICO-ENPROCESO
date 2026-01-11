@@ -1,38 +1,43 @@
 // src/lib/api.ts
 
-// Usamos 127.0.0.1 para máxima compatibilidad
-const API_URL = "http://127.0.0.1:1337";
+// Usamos 127.0.0.1 para máxima compatibilidad local
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:1337";
 
 export async function fetchFromStrapi(path: string, options: RequestInit = {}) {
   // 1. Aseguramos que el path empiece con "/"
   let cleanPath = path.startsWith("/") ? path : `/${path}`;
 
-  // 2. AUTO-CORRECCIÓN INTELIGENTE:
-  // Si la ruta NO empieza con "/api" y NO es una imagen ("/uploads"),
-  // se lo agregamos automáticamente.
+  // 2. AUTO-CORRECCIÓN DE RUTA
   if (!cleanPath.startsWith("/api") && !cleanPath.startsWith("/uploads")) {
     cleanPath = `/api${cleanPath}`;
   }
 
-  // Construimos la URL final
-  const fullUrl = `${API_URL}${cleanPath}`;
+  // 3. 💥 CACHE BUSTER (LA SOLUCIÓN) 💥
+  // Agregamos un número aleatorio al final de la URL para que NUNCA se guarde en caché.
+  const separator = cleanPath.includes("?") ? "&" : "?";
+  const cacheBuster = `t=${Date.now()}`;
+  const finalPath = `${cleanPath}${separator}${cacheBuster}`;
 
-  console.log(`📡 Conectando a Strapi: ${fullUrl}`);
+  // Construimos la URL final
+  const fullUrl = `${API_URL}${finalPath}`;
+
+  console.log(`📡 Fetching (No-Cache): ${fullUrl}`);
 
   try {
     const res = await fetch(fullUrl, {
       headers: {
         "Content-Type": "application/json",
-        // Token si lo necesitaras en el futuro:
-        // "Authorization": `Bearer ${process.env.STRAPI_API_TOKEN}` 
       },
       ...options,
-      cache: "no-store", // Evitamos caché viejo
+      cache: "no-store", // Instrucción estándar para no guardar caché
+      next: { revalidate: 0 } // Instrucción específica de Next.js
     });
 
     if (!res.ok) {
-      // Si falla, mostramos el error claro en la consola
-      console.error(`❌ Error ${res.status} en la petición a: ${fullUrl}`);
+      console.error(`❌ Error ${res.status} en: ${fullUrl}`);
+      // Intentamos leer el error del backend para dar más info
+      const errorBody = await res.text(); 
+      console.error("   Cuerpo del error:", errorBody);
       throw new Error(`Error ${res.status} al conectar con Strapi`);
     }
 
@@ -40,7 +45,6 @@ export async function fetchFromStrapi(path: string, options: RequestInit = {}) {
     return data;
 
   } catch (error) {
-    // Error de red (Strapi apagado o URL mal escrita)
     console.error(`🔥 ERROR CRÍTICO DE CONEXIÓN: ${fullUrl}`);
     throw error;
   }

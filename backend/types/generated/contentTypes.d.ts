@@ -723,6 +723,8 @@ export interface ApiProductoProducto extends Struct.CollectionTypeSchema {
     material: Schema.Attribute.String;
     nombre: Schema.Attribute.String & Schema.Attribute.Required;
     opinions: Schema.Attribute.Relation<'oneToMany', 'api::opinion.opinion'>;
+    permite_grabado: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
     precioBase: Schema.Attribute.Decimal & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
     slug: Schema.Attribute.UID<'nombre'>;

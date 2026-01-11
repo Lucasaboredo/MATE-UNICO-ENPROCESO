@@ -1,6 +1,3 @@
-/**
- * opinion controller
- */
 import { factories } from '@strapi/strapi';
 
 export default factories.createCoreController('api::opinion.opinion', ({ strapi }) => ({
@@ -9,55 +6,71 @@ export default factories.createCoreController('api::opinion.opinion', ({ strapi 
     if (!user) return ctx.unauthorized("Debes iniciar sesión.");
 
     const { data } = ctx.request.body;
-    // Forzamos a número por si llega como string "5"
-    const productoId = Number(data.producto);
+    const productoId = data.producto;
 
     if (!productoId) return ctx.badRequest("El producto es obligatorio.");
 
-    console.log("---------------------------------------------------");
-    console.log(`🔎 [DEBUG OPINION] Validando reseña.`);
-    console.log(`👤 Usuario ID: ${user.id} (${user.username})`);
-    console.log(`🛍️ Producto a reseñar ID: ${productoId}`);
+    // 1. Buscamos el producto actual para saber su nombre
+    // @ts-ignore
+    const productoActual = await strapi.entityService.findOne('api::producto.producto', productoId);
+    if (!productoActual) return ctx.notFound("El producto que intentas reseñar no existe.");
 
-    // 1. Buscamos las órdenes pagadas del usuario
+    const nombreProductoActual = (productoActual.nombre || "").trim().toLowerCase();
+
+    // 2. Traemos órdenes pagadas del usuario
+    // @ts-ignore
     const ordenes = await strapi.db.query('api::orden.orden').findMany({
       where: {
         cliente: user.id,
-        estado: 'pagado', // OJO: Debe coincidir exacto con el enum en la DB
+        estado: 'pagado', 
       },
     });
 
-    console.log(`📦 Órdenes 'pagadas' encontradas: ${ordenes.length}`);
+    // 3. VERIFICACIÓN DOBLE (ID Exacto O Nombre Coincidente)
+    const comproProducto = ordenes.some((orden: any) => {
+      let items = orden.items;
 
-    // 2. Revisamos si el producto está en alguna de esas órdenes
-    const comproProducto = ordenes.some((orden) => {
-      const items = (orden.items as any[]) || [];
-      
-      // Imprimimos los items para ver qué estructura tienen realmente
-      console.log(`   📄 Orden #${orden.id} tiene ${items.length} items:`, JSON.stringify(items));
-      
-      return items.some((item) => {
-        // Chequeamos productId (y forzamos número para comparar)
-        const idEnItem = Number(item.productId || item.id); 
-        return idEnItem === productoId;
+      // --- Limpieza de datos (Parseo seguro) ---
+      if (typeof items === 'string') {
+        try { items = JSON.parse(items); } catch (e) { return false; }
+      }
+      if (typeof items === 'string') { // Doble check por si acaso
+        try { items = JSON.parse(items); } catch (e) { return false; }
+      }
+      if (!Array.isArray(items)) items = [items];
+      // -----------------------------------------
+
+      return items.some((item: any) => {
+        if (!item) return false;
+
+        // A) Intento por ID (Lo ideal)
+        const idEnOrden = String(item.productId || item.id || '');
+        if (idEnOrden === String(productoId)) return true;
+
+        // B) Intento por NOMBRE (El salvavidas 🛟)
+        // Si el ID cambió, verificamos que el nombre del ítem contenga el nombre del producto
+        const nombreEnOrden = (item.nombre || "").trim().toLowerCase();
+        
+        // Ej: "Mate Imperial - Negro" incluye "Mate Imperial" -> TRUE
+        if (nombreProductoActual && nombreEnOrden.includes(nombreProductoActual)) {
+          return true;
+        }
+
+        return false;
       });
     });
 
     if (!comproProducto) {
-      console.log("❌ [FALLÓ] No se encontró el ID del producto en los items de las órdenes.");
-      console.log("---------------------------------------------------");
-      return ctx.forbidden("Solo puedes reseñar productos que has comprado.");
+      return ctx.forbidden(`No pudimos verificar tu compra. (Tus órdenes: ${ordenes.length}).`);
     }
 
-    console.log("✅ [ÉXITO] Compra verificada. Creando reseña...");
-    console.log("---------------------------------------------------");
-
-    // 3. Crear la reseña pendiente
+    // 4. Crear la reseña
+    // @ts-ignore
     const newOpinion = await strapi.entityService.create('api::opinion.opinion', {
       data: {
         ...data,
         usuario: user.id,
-        estado: 'pendiente',
+        estado: 'pendiente', 
         publishedAt: null,
       },
     });
