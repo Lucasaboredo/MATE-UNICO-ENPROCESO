@@ -2,8 +2,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-// CAMBIO AQUÍ: Importamos el componente nuevo (ProductCard) en lugar del viejo.
-// Asegúrate de que el archivo src/components/ProductCard.tsx exista (el que te pasé antes).
 import ProductCard from "@/components/ProductCard";
 
 // ================== CONSTANTES ==================
@@ -23,7 +21,7 @@ const COMBOS = [
 ];
 
 const COLORES = [
-  { label: "Blanco", value: "blanco", dotClass: "bg-white border border-[#ccc]" },
+  { label: "Blanco", value: "blanco", dotClass: "bg-white border border-gray-300" },
   { label: "Negro", value: "negro", dotClass: "bg-black" },
   { label: "Gris", value: "gris", dotClass: "bg-gray-500" },
   { label: "Marrón", value: "marrón", dotClass: "bg-[#964B00]" },
@@ -39,175 +37,215 @@ export default function ProductosView({ productos }: { productos: any[] }) {
   const [combo, setCombo] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
   const [ordenPrecio, setOrdenPrecio] = useState<OrdenPrecio>(null);
+  const [busqueda, setBusqueda] = useState<string>(""); // Estado para la búsqueda
 
   // ================== FILTRADO + ORDEN ==================
   const productosProcesados = useMemo(() => {
     let resultado = productos.filter((p) => {
-      // Nota: Asegúrate de que tus productos en Strapi tengan 'categoria.nombre', 'combo', etc.
-      // Si el filtrado falla, revisa los nombres de los campos en la API.
+      // 1. Filtro por Buscador (Nombre)
+      if (busqueda && !p.nombre.toLowerCase().includes(busqueda.toLowerCase())) {
+        return false;
+      }
+
+      // 2. Filtro por Categoría
       if (categoria && p.categoria?.nombre !== categoria) return false;
+
+      // 3. Filtro por Combo
       if (combo && p.combo !== combo) return false;
 
-      // Filtrado por color (SideBar):
-      // Si 'p.color' es un campo de texto simple en Strapi, esto funciona.
-      // Si quieres filtrar por variantes, habría que ajustar esta lógica, 
-      // pero por ahora lo dejo tal cual lo tenías para no romper nada.
+      // 4. Filtro por Color (Asumiendo que existe p.color o verificando lógica de variantes si fuera necesario)
       if (color && p.color !== color) return false;
 
       return true;
     });
 
+    // Ordenamiento
     if (ordenPrecio === "asc") {
-      resultado = [...resultado].sort(
-        (a, b) => a.precioBase - b.precioBase
-      );
+      resultado = [...resultado].sort((a, b) => a.precioBase - b.precioBase);
+    } else if (ordenPrecio === "desc") {
+      resultado = [...resultado].sort((a, b) => b.precioBase - a.precioBase);
     }
-
-    if (ordenPrecio === "desc") {
-      resultado = [...resultado].sort(
-        (a, b) => b.precioBase - a.precioBase
-      );
-    }
+    // Si es null, se mantiene el orden por defecto (como vienen de Strapi)
 
     return resultado;
-  }, [productos, categoria, combo, color, ordenPrecio]);
+  }, [productos, categoria, combo, color, ordenPrecio, busqueda]);
+
+  // Función para resetear todos los filtros
+  const limpiarFiltros = () => {
+    setCategoria(null);
+    setCombo(null);
+    setColor(null);
+    setBusqueda("");
+    setOrdenPrecio(null);
+  };
 
   return (
-    <main className="w-full bg-[#F4F1EB] min-h-screen">
-      <section className="mx-auto max-w-[1400px] px-6 py-12 flex gap-12">
+    <main className="w-full bg-[#F4F1EB] min-h-screen font-sans text-[#5C5149]">
+      <section className="mx-auto max-w-[1400px] px-6 py-12 flex flex-col md:flex-row gap-12">
+        
+        {/* ================= SIDEBAR (Filtros) ================= */}
+        <aside className="w-full md:w-64 flex-shrink-0">
+          <div className="sticky top-8 space-y-8">
+            
+            {/* Encabezado Sidebar */}
+            <div>
+              <h2 className="text-3xl font-bold text-[#5C5149] mb-4">Productos</h2>
+              <button 
+                onClick={limpiarFiltros}
+                className="text-sm text-[#5C5149]/60 hover:text-[#486837] underline decoration-transparent hover:decoration-current transition-all"
+              >
+                Limpiar filtros
+              </button>
+            </div>
 
-        {/* ================= SIDEBAR ================= */}
-        <aside className="w-64 pr-8 border-r border-[#E0DCD3] select-none hidden md:block">
-          <h2 className="text-[42px] font-bold text-[#5C5149] mb-6">
-            Producto
-          </h2>
+            {/* --- BUSCADOR --- */}
+            <div className="relative">
+              <input 
+                type="text"
+                placeholder="Buscar mate..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="w-full bg-white border border-[#E0DCD3] rounded-lg px-4 py-3 pl-10 text-sm outline-none focus:ring-2 focus:ring-[#5C5149]/20 transition-all placeholder:text-[#5C5149]/40"
+              />
+              {/* Icono Lupa SVG */}
+              <svg 
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5C5149]/50" 
+                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
 
-          {/* Categorías */}
-          <div className="mb-10">
-            <p className="text-[#5C5149] font-semibold mb-2">Categorías</p>
-            <ul className="space-y-1">
-              {CATEGORIAS.map((c) => {
-                const active = categoria === c.value;
-                return (
-                  <li key={c.label}>
-                    <button
-                      type="button"
-                      onClick={() => setCategoria(active ? null : c.value)}
-                      className={`cursor-pointer text-left ${active
-                        ? "text-[#5C5149] font-semibold"
-                        : "text-[#5C5149]/70 hover:text-[#5C5149]"
+            {/* --- CATEGORÍAS --- */}
+            <div>
+              <h3 className="text-lg font-bold mb-3 border-b border-[#E0DCD3] pb-1">Categorías</h3>
+              <ul className="space-y-2">
+                {CATEGORIAS.map((c) => {
+                  const active = categoria === c.value;
+                  return (
+                    <li key={c.label}>
+                      <button
+                        type="button"
+                        onClick={() => setCategoria(active ? null : c.value)}
+                        className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                          active
+                            ? "bg-[#5C5149] text-white font-medium shadow-sm"
+                            : "text-[#5C5149]/80 hover:bg-[#E0DCD3]/50"
                         }`}
-                    >
-                      {c.label}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+                      >
+                        {c.label}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
 
-          {/* Combos */}
-          <div className="mb-10">
-            <p className="text-[#5C5149] font-semibold mb-2">Combos</p>
-            <ul className="space-y-1 text-[#5C5149]/70 italic">
-              {COMBOS.map((c) => {
-                const active = combo === c.value;
-                return (
-                  <li key={c.label}>
-                    <button
-                      type="button"
-                      onClick={() => setCombo(active ? null : c.value)}
-                      className={`cursor-pointer text-left ${active
-                        ? "text-[#5C5149] font-semibold not-italic"
-                        : "hover:text-[#5C5149]"
+            {/* --- COMBOS --- */}
+            <div>
+              <h3 className="text-lg font-bold mb-3 border-b border-[#E0DCD3] pb-1">Combos</h3>
+              <ul className="space-y-2">
+                {COMBOS.map((c) => {
+                  const active = combo === c.value;
+                  return (
+                    <li key={c.label}>
+                      <button
+                        type="button"
+                        onClick={() => setCombo(active ? null : c.value)}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                          active
+                            ? "bg-[#5C5149]/10 text-[#5C5149] font-bold border border-[#5C5149]/20"
+                            : "text-[#5C5149]/70 hover:text-[#5C5149] hover:bg-[#E0DCD3]/30"
                         }`}
-                    >
-                      {c.label}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+                      >
+                        {c.label}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
 
-          {/* Colores */}
-          <div>
-            <p className="text-[#5C5149] font-semibold mb-2">
-              Filtrar por<br />Color
-            </p>
-
-            <ul className="space-y-2 text-[#5C5149]">
-              {COLORES.map((c) => {
-                const active = color === c.value;
-                return (
-                  <li
-                    key={c.label}
-                    className="flex items-center gap-2 cursor-pointer"
-                    onClick={() => setColor(active ? null : c.value)}
-                  >
-                    <span
-                      className={
-                        "w-3 h-3 rounded-full " +
-                        c.dotClass +
-                        (active ? " ring-2 ring-[#5C5149]" : "")
-                      }
-                    />
-                    <span
-                      className={
-                        active
-                          ? "font-semibold"
-                          : "text-[#5C5149]/80 hover:text-[#5C5149]"
-                      }
+            {/* --- COLORES --- */}
+            <div>
+              <h3 className="text-lg font-bold mb-3 border-b border-[#E0DCD3] pb-1">Color</h3>
+              <ul className="space-y-2">
+                {COLORES.map((c) => {
+                  const active = color === c.value;
+                  return (
+                    <li
+                      key={c.label}
+                      onClick={() => setColor(active ? null : c.value)}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-all ${
+                         active ? "bg-white shadow-sm ring-1 ring-[#5C5149]/10" : "hover:bg-[#E0DCD3]/30"
+                      }`}
                     >
-                      {c.label}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+                      <span
+                        className={`w-5 h-5 rounded-full shadow-sm ${c.dotClass} ${active ? "ring-2 ring-offset-2 ring-[#5C5149]" : ""}`}
+                      />
+                      <span className={`text-sm ${active ? "font-semibold text-[#5C5149]" : "text-[#5C5149]/80"}`}>
+                        {c.label}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
         </aside>
 
-        {/* ================= CONTENIDO ================= */}
+        {/* ================= CONTENIDO PRINCIPAL ================= */}
         <div className="flex-1">
 
-          {/* ORDENAR ARRIBA DERECHA */}
-          <div className="flex justify-end mb-6">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-[#5C5149]">
+          {/* BARRA SUPERIOR (Resultados + Ordenar) */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <p className="text-[#5C5149]/60 text-sm">
+              Mostrando <span className="font-bold text-[#5C5149]">{productosProcesados.length}</span> productos
+            </p>
+
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-[#5C5149] whitespace-nowrap">
                 Ordenar por:
               </span>
-              <select
-                value={ordenPrecio ?? ""}
-                onChange={(e) =>
-                  setOrdenPrecio(
-                    e.target.value === ""
-                      ? null
-                      : (e.target.value as OrdenPrecio)
-                  )
-                }
-                className="border border-[#E0DCD3] rounded-md px-3 py-1.5 text-sm bg-white text-[#5C5149] focus:outline-none focus:ring-2 focus:ring-[#486837]/40"
-              >
-                <option value="">Sin ordenar</option>
-                <option value="asc">Precio: menor a mayor</option>
-                <option value="desc">Precio: mayor a menor</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={ordenPrecio ?? ""}
+                  onChange={(e) =>
+                    setOrdenPrecio(
+                      e.target.value === "" ? null : (e.target.value as OrdenPrecio)
+                    )
+                  }
+                  className="appearance-none bg-white border border-[#E0DCD3] rounded-lg pl-4 pr-10 py-2 text-sm text-[#5C5149] focus:outline-none focus:ring-2 focus:ring-[#5C5149]/20 cursor-pointer shadow-sm hover:border-[#5C5149]/40 transition-colors"
+                >
+                  <option value="">Por defecto</option>
+                  <option value="asc">Precio: Menor a mayor</option>
+                  <option value="desc">Precio: Mayor a menor</option>
+                </select>
+                {/* Icono Flecha Select */}
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5C5149]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </div>
             </div>
           </div>
 
-          {/* GRID */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
-            {productosProcesados.map((p: any) => (
-              // CAMBIO AQUÍ: Usamos ProductCard (el nuevo)
-              <ProductCard key={p.id} producto={p} />
-            ))}
-
-            {productosProcesados.length === 0 && (
-              <p className="text-[#5C5149]/70 col-span-full text-center py-10">
-                No hay productos que coincidan con los filtros seleccionados.
-              </p>
-            )}
-          </div>
+          {/* GRID DE PRODUCTOS */}
+          {productosProcesados.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+              {productosProcesados.map((p: any) => (
+                <ProductCard key={p.id} producto={p} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-xl border border-dashed border-[#E0DCD3]">
+              <p className="text-lg font-medium text-[#5C5149] mb-2">No encontramos mates con esa búsqueda.</p>
+              <p className="text-[#5C5149]/60 text-sm">Prueba ajustando los filtros o buscando otra cosa.</p>
+              <button 
+                onClick={limpiarFiltros} 
+                className="mt-6 px-6 py-2 bg-[#5C5149] text-white rounded-lg hover:bg-[#4a413a] transition-colors text-sm font-medium"
+              >
+                Ver todos los productos
+              </button>
+            </div>
+          )}
         </div>
       </section>
     </main>
