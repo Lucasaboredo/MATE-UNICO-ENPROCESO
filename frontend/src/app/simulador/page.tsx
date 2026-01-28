@@ -4,17 +4,24 @@ import { useState } from "react";
 import Link from "next/link";
 import Mate2DPreview from "@/components/Mate2DPreview";
 
+// Definimos los modelos disponibles (Ahora son 3)
+const MODELOS = [
+  { id: 'imperial', nombre: 'Imperial', src: '/mate-frontal.webp' }, // El original
+  { id: 'camionero', nombre: 'Camionero', src: '/camionero.png' },
+  { id: 'algarrobo', nombre: 'Algarrobo', src: '/algarrobo.png' },
+];
+
 export default function SimuladorPage() {
   const [texto, setTexto] = useState("TU NOMBRE");
+  const [mateActual, setMateActual] = useState(MODELOS[0]); // Arranca con el Imperial
   const [confirmado, setConfirmado] = useState(false);
 
-  // Fuente fija "Clásica"
+  // Fuente fija
   const fontFija = "'Times New Roman', serif";
 
   const handleConfirmar = () => {
     if (!texto.trim()) return;
     setConfirmado(true);
-    // Aquí podrías guardar el diseño en localStorage o Context si quisieras pasarlo al carrito
   };
 
   const handleReset = () => {
@@ -28,12 +35,12 @@ export default function SimuladorPage() {
         
         <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-bold text-[#1a1a1a] mb-4">
-            Simulador de Grabado
+            Personalizá tu Mate
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
             {confirmado 
-              ? "¡Así quedará tu mate! ¿Te gusta el resultado?"
-              : "Probá cómo quedaría tu nombre en la virola."
+              ? "¡Quedó espectacular! ¿Te lo llevás así?"
+              : "Probá cómo quedaría tu nombre grabado en la virola."
             }
           </p>
         </div>
@@ -46,65 +53,93 @@ export default function SimuladorPage() {
             {!confirmado ? (
               // MODO EDICIÓN
               <>
+                {/* 1. SELECCIÓN DE MODELO */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
-                    Escribí el nombre
+                    Elegí el modelo
+                  </label>
+                  <div className="grid grid-cols-3 gap-2"> 
+                    {MODELOS.map((modelo) => (
+                      <button
+                        key={modelo.id}
+                        onClick={() => setMateActual(modelo)}
+                        className={`py-3 px-1 rounded-xl text-xs md:text-sm font-bold border-2 transition-all ${
+                          mateActual.id === modelo.id
+                            ? "border-[#1a1a1a] bg-[#1a1a1a] text-white shadow-md"
+                            : "border-gray-200 text-gray-600 hover:border-gray-300 bg-gray-50"
+                        }`}
+                      >
+                        {modelo.nombre}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. INGRESO DE TEXTO */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
+                    Ingresá el nombre
                   </label>
                   <input
                     type="text"
                     value={texto}
                     onChange={(e) => setTexto(e.target.value.toUpperCase())}
-                    maxLength={18}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-4 text-xl font-bold text-center tracking-widest focus:ring-2 focus:ring-[#4A4A40] outline-none uppercase placeholder-gray-300"
+                    maxLength={10} 
+                    className="w-full border border-gray-300 rounded-xl px-4 py-4 text-xl font-bold text-center tracking-widest focus:ring-2 focus:ring-[#4A4A40] outline-none uppercase placeholder-gray-300 transition-all"
                     placeholder="EJ: JUAN"
-                    autoFocus
                   />
-                  <p className="text-xs text-gray-400 mt-2 text-right">
-                    {texto.length}/14 letras
-                  </p>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-gray-400">Máximo 10 caracteres</span>
+                    <span className={`text-xs font-bold ${texto.length === 10 ? 'text-red-500' : 'text-gray-400'}`}>
+                      {texto.length}/10
+                    </span>
+                  </div>
                 </div>
 
-                <div className="pt-4">
-                   <p className="text-sm text-gray-500 mb-4 text-center">
+                <div className="pt-2">
+                   <p className="text-sm text-gray-500 mb-6 text-center bg-gray-50 py-2 rounded-lg border border-gray-100">
                      Tipografía: <b>Clásica (Imperial)</b>
                    </p>
                    <button 
                      onClick={handleConfirmar}
                      disabled={texto.length < 1}
-                     className="w-full bg-[#1a1a1a] text-white py-4 rounded-full font-bold uppercase tracking-wide hover:bg-[#333] transition transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                     className="w-full bg-[#1a1a1a] text-white py-4 rounded-full font-bold uppercase tracking-wide hover:bg-[#333] transition transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                    >
                      Confirmar Diseño
                    </button>
                 </div>
               </>
             ) : (
-              // MODO CONFIRMADO (Resultado)
-              <div className="text-center py-4">
+              // MODO CONFIRMADO
+              <div className="text-center py-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-6 flex justify-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center animate-bounce">
-                    <span className="text-2xl">✨</span>
+                  <div className="w-16 h-16 bg-[#e8f5e9] rounded-full flex items-center justify-center">
+                    <span className="text-2xl animate-bounce">✨</span>
                   </div>
                 </div>
                 <h3 className="text-2xl font-bold text-[#1a1a1a] mb-2">
                   ¡Diseño Guardado!
                 </h3>
-                <p className="text-gray-500 mb-8 text-sm">
-                  Tu grabado <b>"{texto}"</b> está listo.
+                <p className="text-gray-500 mb-2 text-sm px-4">
+                  Modelo: <b>{mateActual.nombre}</b>
+                </p>
+                <p className="text-gray-500 mb-8 text-sm px-4">
+                  Grabado: <b>"{texto}"</b>
                 </p>
 
                 <div className="space-y-3">
                   <Link 
-                    href={`/productos?grabado=${texto}`} // Truco: Pasamos el texto por URL
-                    className="block w-full bg-[#1a1a1a] text-white py-4 rounded-full font-bold uppercase tracking-wide hover:bg-[#333] shadow-lg"
+                    href={`/productos?grabado=${encodeURIComponent(texto)}&modelo=${mateActual.id}`} 
+                    className="block w-full bg-[#1a1a1a] text-white py-4 rounded-full font-bold uppercase tracking-wide hover:bg-[#333] shadow-lg transition-all hover:scale-[1.02]"
                   >
-                    Ir a Comprar este Mate
+                    Ir a Comprar
                   </Link>
                   
                   <button 
                     onClick={handleReset}
-                    className="block w-full bg-white border-2 border-gray-200 text-gray-600 py-3 rounded-full font-bold uppercase tracking-wide hover:border-gray-400 hover:text-black transition"
+                    className="block w-full bg-white border-2 border-gray-200 text-gray-600 py-3 rounded-full font-bold uppercase tracking-wide hover:border-gray-400 hover:text-black transition-all"
                   >
-                    Simular otro nombre
+                    Probar otro
                   </button>
                 </div>
               </div>
@@ -112,16 +147,17 @@ export default function SimuladorPage() {
           </div>
 
           {/* --- VISUALIZADOR (Derecha) --- */}
-          <div className={`lg:col-span-7 transition-all duration-500 ${confirmado ? 'scale-105' : 'scale-100'}`}>
-             {/* Cuando está confirmado, le quitamos opacidad o agregamos un marco dorado/verde 
-                para indicar que es el "final".
-             */}
-             <div className={`relative transition-all duration-500 ${confirmado ? 'ring-4 ring-[#4A4A40] rounded-xl shadow-2xl' : ''}`}>
-                <Mate2DPreview texto={texto} font={fontFija} />
+          <div className={`lg:col-span-7 transition-all duration-700 ease-out ${confirmado ? 'scale-[1.02]' : 'scale-100'}`}>
+             <div className={`relative transition-all duration-500 ${confirmado ? 'ring-4 ring-[#4A4A40]/20 rounded-xl shadow-2xl' : ''}`}>
+                <Mate2DPreview 
+                  texto={texto} 
+                  font={fontFija} 
+                  imagenFondo={mateActual.src} 
+                />
                 
                 {confirmado && (
-                  <div className="absolute top-4 right-4 bg-[#1a1a1a] text-white text-xs font-bold px-3 py-1 rounded-full shadow-md z-10">
-                    DISEÑO FINAL
+                  <div className="absolute top-4 right-4 bg-[#1a1a1a] text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg z-10 tracking-wider animate-in fade-in zoom-in duration-300">
+                    VISTA PREVIA
                   </div>
                 )}
              </div>
